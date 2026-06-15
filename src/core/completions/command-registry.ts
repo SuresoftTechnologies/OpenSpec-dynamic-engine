@@ -148,6 +148,15 @@ export const COMMAND_REGISTRY: CommandDefinition[] = [
         name: 'no-validate',
         description: 'Skip validation (not recommended)',
       },
+      {
+        name: 'jira',
+        description: 'Jira issue key for archive naming (team schema only)',
+        takesValue: true,
+      },
+      {
+        name: 'require-jira',
+        description: 'Require a Jira key when archiving',
+      },
     ],
   },
   {

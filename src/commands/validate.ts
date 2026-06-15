@@ -1,9 +1,23 @@
 import ora from 'ora';
 import path from 'path';
 import { Validator } from '../core/validation/validator.js';
+import { TEAM_SCHEMA_NAME } from '../core/validation/team-policy.js';
+import { resolveSchemaForChange } from '../utils/change-metadata.js';
 import { isInteractive, resolveNoInteractive } from '../utils/interactive.js';
 import { getActiveChangeIds, getSpecIds } from '../utils/item-discovery.js';
 import { nearestMatches } from '../utils/match.js';
+
+/**
+ * change의 resolved schema가 팀 schema(`engine-spec-driven`)이면 팀 정책 검증을 켠다.
+ * schema 해석에 실패하면 기존 동작을 유지하기 위해 false를 반환한다.
+ */
+function isTeamPolicyChange(changeDir: string): boolean {
+  try {
+    return resolveSchemaForChange(changeDir) === TEAM_SCHEMA_NAME;
+  } catch {
+    return false;
+  }
+}
 
 type ItemType = 'change' | 'spec';
 
@@ -128,9 +142,9 @@ export class ValidateCommand {
   }
 
   private async validateByType(type: ItemType, id: string, opts: { strict: boolean; json: boolean }): Promise<void> {
-    const validator = new Validator(opts.strict);
     if (type === 'change') {
       const changeDir = path.join(process.cwd(), 'openspec', 'changes', id);
+      const validator = new Validator(opts.strict, { teamPolicy: isTeamPolicyChange(changeDir) });
       const start = Date.now();
       const report = await validator.validateChangeDeltaSpecs(changeDir);
       const durationMs = Date.now() - start;
@@ -139,6 +153,7 @@ export class ValidateCommand {
       process.exitCode = report.valid ? 0 : 1;
       return;
     }
+    const validator = new Validator(opts.strict);
     const file = path.join(process.cwd(), 'openspec', 'specs', id, 'spec.md');
     const start = Date.now();
     const report = await validator.validateSpec(file);
@@ -198,7 +213,11 @@ export class ValidateCommand {
       queue.push(async () => {
         const start = Date.now();
         const changeDir = path.join(process.cwd(), 'openspec', 'changes', id);
-        const report = await validator.validateChangeDeltaSpecs(changeDir);
+        // 팀 schema change에는 팀 정책 검증을 켠 별도 validator를 사용한다.
+        const changeValidator = isTeamPolicyChange(changeDir)
+          ? new Validator(opts.strict, { teamPolicy: true })
+          : validator;
+        const report = await changeValidator.validateChangeDeltaSpecs(changeDir);
         const durationMs = Date.now() - start;
         return { id, type: 'change' as const, valid: report.valid, issues: report.issues, durationMs };
       });
