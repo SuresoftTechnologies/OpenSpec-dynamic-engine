@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenSpec Local Installer"
+  short_description: "Install this customized OpenSpec CLI and apply team config."
+  default_prompt: "Install the customized OpenSpec CLI from this repository and apply the team configuration to my target repository."
