@@ -13,12 +13,20 @@ import {
 import { parseDeltaSpec, normalizeRequirementName } from '../parsers/requirement-blocks.js';
 import { findMainSpecStructureIssues } from '../parsers/spec-structure.js';
 import { FileSystemUtils } from '../../utils/file-system.js';
+import {
+  teamCapabilityNameIssue,
+  extractProposalCapabilityNames,
+  findScaffoldPlaceholderIssues,
+} from './team-policy.js';
 
 export class Validator {
   private strictMode: boolean;
+  /** dynamic-engine 팀 정책 검증(capability 이름, 한글 문서 경고)을 켤지 여부. 기본은 끔. */
+  private teamPolicy: boolean;
 
-  constructor(strictMode: boolean = false) {
+  constructor(strictMode: boolean = false, options: { teamPolicy?: boolean } = {}) {
     this.strictMode = strictMode;
+    this.teamPolicy = options.teamPolicy ?? false;
   }
 
   async validateSpec(filePath: string): Promise<ValidationReport> {
@@ -89,7 +97,16 @@ export class Validator {
       }
       
       issues.push(...this.applyChangeRules(change, content));
-      
+
+      // 팀 정책이 켜진 경우 proposal의 capability 이름과 한글 문서 경고를 추가로 검증한다.
+      if (this.teamPolicy) {
+        for (const name of extractProposalCapabilityNames(content)) {
+          const issue = teamCapabilityNameIssue(name, 'Capabilities');
+          if (issue) issues.push(issue);
+        }
+        issues.push(...findScaffoldPlaceholderIssues(content, 'proposal.md'));
+      }
+
     } catch (error) {
       const baseMessage = error instanceof Error ? error.message : 'Unknown error';
       const enriched = this.enrichTopLevelError(changeName, baseMessage);
@@ -134,6 +151,13 @@ export class Validator {
 
         const plan = parseDeltaSpec(content);
         const entryPath = `${specName}/spec.md`;
+
+        // 팀 정책: spec directory 이름이 팀 capability 형식을 따르는지, 한글 문서 경고가 필요한지 검증한다.
+        if (this.teamPolicy) {
+          const namingIssue = teamCapabilityNameIssue(specName, entryPath);
+          if (namingIssue) issues.push(namingIssue);
+          issues.push(...findScaffoldPlaceholderIssues(content, entryPath));
+        }
         const sectionNames: string[] = [];
         if (plan.sectionPresence.added) sectionNames.push('## ADDED Requirements');
         if (plan.sectionPresence.modified) sectionNames.push('## MODIFIED Requirements');

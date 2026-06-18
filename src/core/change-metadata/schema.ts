@@ -17,6 +17,26 @@ export const InitiativeLinkSchema = z.object({
 
 export type InitiativeLink = z.infer<typeof InitiativeLinkSchema>;
 
+// 기본 `PROJECT-123` 형식의 Jira issue key 패턴.
+// 프로젝트 키는 대문자로 시작하고 대문자/숫자로 이어지며(예: CT2606), 뒤에 `-숫자`가 붙는다.
+export const JIRA_KEY_PATTERN = /^[A-Z][A-Z0-9]+-\d+$/;
+
+/** Jira key가 입력된 출처. archive 시점에 어떻게 resolve했는지를 보조 metadata로 보존한다. */
+export const JiraSourceSchema = z.enum(['branch', 'prompt']);
+export type JiraSource = z.infer<typeof JiraSourceSchema>;
+
+// Jira 보조 metadata. archive directory name이 primary trace key이며, 이 값은 보조 정보다.
+export const JiraMetadataSchema = z
+  .object({
+    key: z.string().regex(JIRA_KEY_PATTERN, {
+      message: 'jira.key must match the PROJECT-123 style pattern (e.g., CT2606-616)',
+    }),
+    source: JiraSourceSchema,
+  })
+  .strict();
+
+export type JiraMetadata = z.infer<typeof JiraMetadataSchema>;
+
 // Per-change metadata schema. The schema field is validated against available
 // workflow schemas when metadata is read or written.
 export const ChangeMetadataSchema = z.object({
@@ -30,6 +50,8 @@ export const ChangeMetadataSchema = z.object({
   goal: z.string().min(1).optional(),
   affected_areas: z.array(z.string().min(1)).optional(),
   initiative: InitiativeLinkSchema.optional(),
+  // Jira 보조 metadata(선택). archive 시점에 기록될 수 있다.
+  jira: JiraMetadataSchema.optional(),
 });
 
 export type ChangeMetadata = z.infer<typeof ChangeMetadataSchema>;

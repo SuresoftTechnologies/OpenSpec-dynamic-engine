@@ -9,6 +9,14 @@ import {
   writeUpdatedSpec,
   type SpecUpdate,
 } from './specs-apply.js';
+import { TEAM_SCHEMA_NAME } from './validation/team-policy.js';
+import {
+  getCurrentGitBranch,
+  resolveJiraKey,
+  buildArchiveDirName,
+  type JiraResolution,
+} from './archive-jira.js';
+import { readChangeMetadata, writeChangeMetadata, resolveSchemaForChange } from '../utils/change-metadata.js';
 
 /**
  * Recursively copy a directory. Used when fs.rename fails (e.g. EPERM on Windows).
@@ -50,7 +58,16 @@ async function moveDirectory(src: string, dest: string): Promise<void> {
 export class ArchiveCommand {
   async execute(
     changeName?: string,
-    options: { yes?: boolean; skipSpecs?: boolean; noValidate?: boolean; validate?: boolean } = {}
+    options: {
+      yes?: boolean;
+      skipSpecs?: boolean;
+      noValidate?: boolean;
+      validate?: boolean;
+      /** 명시적 Jira key(예: prompt 대체 또는 자동화 입력). */
+      jira?: string;
+      /** 팀 정책상 Jira key를 필수로 요구할지 여부. */
+      requireJira?: boolean;
+    } = {}
   ): Promise<void> {
     const targetPath = '.';
     const changesDir = path.join(targetPath, 'openspec', 'changes');
@@ -264,8 +281,35 @@ export class ArchiveCommand {
       }
     }
 
-    // Create archive directory with date prefix
-    const archiveName = `${this.getArchiveDate()}-${changeName}`;
+    // 팀 Jira/archive 정책: resolved schema가 팀 schema면 Jira key 기반 naming을 적용한다.
+    const projectRoot = path.resolve(targetPath);
+    const jira = await this.resolveJira(changeDir, projectRoot, options);
+
+    // Jira key가 resolve되면 보조 metadata로 .openspec.yaml에 기록한다(이동 시 함께 보존됨).
+    if (jira.key && jira.source) {
+      try {
+        const existing = readChangeMetadata(changeDir, projectRoot);
+        const base = existing ?? {
+          schema: resolveSchemaForChange(changeDir, undefined, projectRoot),
+        };
+        writeChangeMetadata(
+          changeDir,
+          { ...base, jira: { key: jira.key, source: jira.source } },
+          projectRoot
+        );
+      } catch (err: any) {
+        console.log(
+          chalk.yellow(`Could not record Jira metadata: ${err?.message ?? String(err)}`)
+        );
+      }
+    }
+
+    // Create archive directory name (Jira-aware, falls back to date-change)
+    const archiveName = buildArchiveDirName({
+      date: this.getArchiveDate(),
+      changeName,
+      jiraKey: jira.key,
+    });
     const archivePath = path.join(archiveDir, archiveName);
 
     // Check if archive already exists
@@ -285,6 +329,57 @@ export class ArchiveCommand {
     await moveDirectory(changeDir, archivePath);
 
     console.log(`Change '${changeName}' archived as '${archiveName}'.`);
+    if (jira.key) {
+      console.log(`Jira key: ${jira.key} (source: ${jira.source}). Archive path: ${archivePath}`);
+    }
+  }
+
+  /**
+   * archive 시점에 Jira key를 resolve한다.
+   * 팀 schema(`engine-spec-driven`)인 경우에만 동작하며, 순서는 branch -> (필수 시) prompt -> fallback 이다.
+   */
+  private async resolveJira(
+    changeDir: string,
+    projectRoot: string,
+    options: { yes?: boolean; jira?: string; requireJira?: boolean }
+  ): Promise<JiraResolution> {
+    let resolvedSchema: string | undefined;
+    try {
+      resolvedSchema = resolveSchemaForChange(changeDir, undefined, projectRoot);
+    } catch {
+      resolvedSchema = undefined;
+    }
+
+    // 팀 archive 정책이 설정된 경우(= 팀 schema)에만 Jira naming을 적용한다.
+    if (resolvedSchema !== TEAM_SCHEMA_NAME) {
+      return { key: null };
+    }
+
+    const branch = getCurrentGitBranch(projectRoot);
+    let resolution = resolveJiraKey(branch, options.jira ?? null);
+
+    // 필수인데 아직 key가 없고 상호작용이 가능하면 입력을 요청한다.
+    if (!resolution.key && options.requireJira && !options.yes) {
+      try {
+        const { input } = await import('@inquirer/prompts');
+        const entered = await input({
+          message: 'Enter Jira key for archive (e.g., CT2606-616):',
+        });
+        resolution = resolveJiraKey(branch, entered);
+      } catch {
+        // 사용자가 입력을 취소하면 fallback 한다.
+      }
+    }
+
+    if (!resolution.key && options.requireJira) {
+      console.log(
+        chalk.yellow(
+          'No valid Jira key resolved; falling back to date-based archive naming.'
+        )
+      );
+    }
+
+    return resolution;
   }
 
   private async selectChange(changesDir: string): Promise<string | null> {

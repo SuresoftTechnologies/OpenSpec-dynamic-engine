@@ -86,12 +86,14 @@ export function getArchiveChangeSkillTemplate(): SkillTemplate {
    mv "<changeRoot>" "<planningHome.changesDir>/archive/YYYY-MM-DD-<name>"
    \`\`\`
 
+   **Team Jira/archive policy:** If the repository configures a team Jira/archive policy, prefer running \`openspec archive "<name>"\` instead of a manual \`mv\`. The CLI resolves the Jira key in order (branch, then prompt, then optional fallback), names the archive directory \`YYYY-MM-DD_<JIRA-KEY>_<name>\` when a key is found, falls back to \`YYYY-MM-DD-<name>\` when no key is required, and records \`jira.key\`/\`jira.source\` in \`.openspec.yaml\`. Use the Jira key and archive path printed by the CLI in the summary.
+
 6. **Display summary**
 
    Show archive completion summary including:
    - Change name
    - Schema that was used
-   - Archive location
+   - Archive location (include the Jira key when the CLI resolved one)
    - Whether specs were synced (if applicable)
    - Note about any warnings (incomplete artifacts/tasks)
 
@@ -204,12 +206,14 @@ export function getOpsxArchiveCommandTemplate(): CommandTemplate {
    mv "<changeRoot>" "<planningHome.changesDir>/archive/YYYY-MM-DD-<name>"
    \`\`\`
 
+   **Team Jira/archive policy:** If the repository configures a team Jira/archive policy, prefer running \`openspec archive "<name>"\` instead of a manual \`mv\`. The CLI resolves the Jira key in order (branch, then prompt, then optional fallback), names the archive directory \`YYYY-MM-DD_<JIRA-KEY>_<name>\` when a key is found, falls back to \`YYYY-MM-DD-<name>\` when no key is required, and records \`jira.key\`/\`jira.source\` in \`.openspec.yaml\`. Use the Jira key and archive path printed by the CLI in the summary.
+
 6. **Display summary**
 
    Show archive completion summary including:
    - Change name
    - Schema that was used
-   - Archive location
+   - Archive location (include the Jira key when the CLI resolved one)
    - Spec sync status (synced / sync skipped / no delta specs)
    - Note about any warnings (incomplete artifacts/tasks)
 
