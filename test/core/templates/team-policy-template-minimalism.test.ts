@@ -10,7 +10,7 @@ import { generateSkillContent } from '../../../src/core/shared/skill-generation.
 // repository별 팀 정책이 generated template 본문에 hardcode되면 안 된다.
 const HARDCODED_TEAM_POLICY_MARKERS = [
   '한글',
-  'major-feature_minor-feature_issue-name',
+  '대기능_중기능_소기능',
   'engine-spec-driven',
 ];
 

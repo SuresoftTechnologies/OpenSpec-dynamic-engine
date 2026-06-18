@@ -10,11 +10,11 @@ context: |
 rules:
   proposal:
     - 문서는 한글로 작성한다.
-    - Capabilities에는 major-feature_minor-feature_issue-name 형식의 capability 이름을 사용한다.
+    - Capabilities에는 대기능_중기능_소기능 형식의 capability 이름을 사용한다.
     - 각 segment는 kebab-case로 작성한다.
   specs:
     - 문서는 한글로 작성한다.
-    - spec directory name은 proposal의 capability 이름과 동일한 major-feature_minor-feature_issue-name 형식을 사용한다.
+    - spec directory name은 proposal의 capability 이름과 동일한 대기능_중기능_소기능 형식을 사용한다.
     - 각 requirement와 scenario는 검증 가능한 사용자 관찰 동작으로 작성한다.
   design:
     - 문서는 한글로 작성한다.

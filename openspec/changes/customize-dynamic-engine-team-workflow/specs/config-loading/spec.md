@@ -16,7 +16,7 @@
 #### Scenario: Preset artifact policies
 - **WHEN** `engine.config.yaml` preset이 대상 repository에 적용된다
 - **THEN** `context`와 `rules`는 한글 문서 작성 정책을 proposal, specs, design, tasks artifact에 전달한다
-- **AND** proposal/specs rules는 `major-feature_minor-feature_issue-name` capability naming guidance를 포함한다
+- **AND** proposal/specs rules는 `대기능_중기능_소기능` capability naming guidance를 포함한다
 - **AND** tasks rules는 테스트 우선 task 작성 및 테스트 통과 후 task 완료 기준을 포함한다
 
 ### Requirement: Dynamic Engine Schema Preset

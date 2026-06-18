@@ -6,8 +6,8 @@ dynamic-engine 팀에서 OpenSpec을 사용할 때 반복되는 문서 작성 �
 
 **팀 capability 이름 규칙**
 - From: capability 이름은 기본 kebab-case convention만 따릅니다.
-- To: 팀 정책이 설정된 repository에서는 `major-feature_minor-feature_issue-name` 형식을 proposal `Capabilities`와 spec directory name에 안내하고 검증합니다.
-- Reason: 대기능, 소기능, 이슈명을 capability 이름에 일관되게 담아 review와 검색성을 높여야 합니다.
+- To: 팀 정책이 설정된 repository에서는 `대기능_중기능_소기능` 형식을 proposal `Capabilities`와 spec directory name에 안내하고 검증합니다.
+- Reason: 대기능, 중기능, 소기능을 capability 이름에 일관되게 담아 review와 검색성을 높여야 합니다.
 - Impact: artifact 작성 guidance와 validation에만 필요한 최소 변경을 추가합니다.
 
 **OpenSpec 문서 한글 작성**

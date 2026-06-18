@@ -44,7 +44,7 @@ Artifact workflow SHALL 기존 `openspec/config.yaml`의 `context`와 `rules`를
 
 #### Scenario: Capability naming guidance
 - **WHEN** 사용자가 dynamic-engine config preset이 적용된 repository에서 `openspec instructions proposal` 또는 `specs`를 요청한다
-- **THEN** 응답은 `major-feature_minor-feature_issue-name` 형식과 kebab-case segment 정책을 포함한다
+- **THEN** 응답은 `대기능_중기능_소기능` 형식과 kebab-case segment 정책을 포함한다
 - **AND** proposal `Capabilities` section과 `specs/<capability>/spec.md` directory name에 적용됨을 안내한다
 
 #### Scenario: Generated skill template minimalism

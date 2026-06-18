@@ -43,7 +43,7 @@ OpenSpec에는 이미 팀 정책을 실을 수 있는 지점이 있습니다.
 - proposal/specs/design/tasks artifact 구조, template 참조, artifact instruction의 기본 골자는 기존 `spec-driven` 흐름을 유지합니다.
 - built-in `spec-driven` instruction에 있는 parser 주의사항, capability/spec 작성 규칙, `MODIFIED` requirement workflow, task checkbox tracking 규칙, task verifiability guidance는 축약하지 않습니다.
 - dynamic-engine 팀 지시는 각 artifact instruction 끝의 명확한 추가 section으로 덧붙입니다.
-- 팀 추가 section은 한글 문서 작성, `major-feature_minor-feature_issue-name` capability naming, 테스트 우선 task 작성처럼 팀 정책에 해당하는 내용만 포함합니다.
+- 팀 추가 section은 한글 문서 작성, `대기능_중기능_소기능` capability naming, 테스트 우선 task 작성처럼 팀 정책에 해당하는 내용만 포함합니다.
 - `apply.instruction`에 dynamic-engine 팀 구현 원칙을 직접 작성합니다.
 - `apply.instruction`도 built-in apply instruction의 기본 진행 문장인 context file 확인, pending task 처리, blocker 시 중단/확인 원칙을 유지한 뒤 팀 구현 원칙을 덧붙입니다.
 - 포함할 apply 원칙:

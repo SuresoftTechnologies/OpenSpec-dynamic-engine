@@ -29,7 +29,7 @@ artifacts:
       Dynamic-engine team additional guidance:
       - Follow repository context and rules from openspec/config.yaml.
       - Write reviewer-facing prose in Korean.
-      - Use `major-feature_minor-feature_issue-name` for capability names when listing Capabilities.
+      - Use `대기능_중기능_소기능` for capability names when listing Capabilities.
       - Each capability name segment uses kebab-case.
     requires: []
 
@@ -90,7 +90,7 @@ artifacts:
       - Follow repository context and rules from openspec/config.yaml.
       - Write reviewer-facing prose in Korean.
       - Use the exact capability names from proposal Capabilities for spec directory names.
-      - Team capability names use `major-feature_minor-feature_issue-name`, with each segment in kebab-case.
+      - Team capability names use `대기능_중기능_소기능`, with each segment in kebab-case.
     requires:
       - proposal
 

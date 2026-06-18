@@ -53,3 +53,8 @@
 - [x] 8.2 `engine-spec-driven` apply instruction이 built-in apply flow를 유지한 뒤 TDD, 한글 주석, 테스트 추적성 주석, task 완료 timing 정책을 추가하도록 정리한다.
 - [x] 8.3 schema preset이 specs parser 주의사항, `MODIFIED` requirement workflow, task checkbox tracking, task verifiability guidance를 유지하는 regression 테스트를 추가한다.
 - [x] 8.4 관련 focused tests와 `customize-dynamic-engine-team-workflow` OpenSpec validation을 실행한다.
+
+## 9. Capability naming label update
+
+- [x] 9.1 팀 capability naming guidance를 기존 영문 label에서 `대기능_중기능_소기능`으로 정리한다.
+- [x] 9.2 validation message, preset instruction, change spec, regression test의 예시를 `대기능_중기능_소기능` 의미에 맞춰 갱신한다.

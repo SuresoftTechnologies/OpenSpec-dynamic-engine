@@ -22,14 +22,14 @@ OpenSpec SHALL dynamic-engine 팀별 artifact 작성 및 apply 구현 정책을 
 OpenSpec SHALL `_`로 구분된 세 segment로 구성되고 각 segment가 kebab-case인 팀 capability 이름 규칙을 지원한다.
 
 #### Scenario: 팀 capability 이름 허용
-- **WHEN** 사용자가 `order-payment_refund-api_fix-timeout` 이름으로 capability를 proposal 또는 spec path에 작성한다
+- **WHEN** 사용자가 `order-payment_refund-api_timeout-fix` 이름으로 capability를 proposal 또는 spec path에 작성한다
 - **THEN** 시스템은 해당 이름을 유효한 capability 이름으로 허용한다
-- **AND** `order-payment`, `refund-api`, `fix-timeout`을 `_`로 구분된 kebab-case segment로 처리한다
+- **AND** `order-payment`, `refund-api`, `timeout-fix`를 `_`로 구분된 kebab-case segment로 처리한다
 
 #### Scenario: 잘못된 팀 capability 이름 거부
 - **WHEN** 사용자가 대문자, 공백, 빈 segment, 또는 kebab-case가 아닌 segment를 포함한 팀 형식 capability 이름을 작성하거나 검증한다
 - **THEN** 시스템은 해당 capability 이름을 거부한다
-- **AND** `order-payment_refund-api_fix-timeout` 예시를 포함한 guidance를 표시한다
+- **AND** `대기능_중기능_소기능` 규칙과 `order-payment_refund-api_timeout-fix` 예시를 포함한 guidance를 표시한다
 
 ### Requirement: Korean OpenSpec Documents
 OpenSpec SHALL dynamic-engine config preset이 적용된 repository에서 OpenSpec 문서를 한글로 작성하도록 요구한다.

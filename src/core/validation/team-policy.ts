@@ -3,7 +3,7 @@
  *
  * 이 모듈은 원본 OpenSpec 검증 흐름을 바꾸지 않고, 팀 schema(`engine-spec-driven`)가
  * 적용된 change에서만 추가로 적용할 수 있는 순수 검증 함수를 제공한다.
- * - 팀 capability 이름 규칙(`major-feature_minor-feature_issue-name`).
+ * - 팀 capability 이름 규칙(`대기능_중기능_소기능`).
  * - 한글 문서 작성 정책에 대한 명백한 영문 scaffold placeholder 경고.
  */
 import { ValidationIssue } from './types.js';
@@ -15,7 +15,7 @@ export const TEAM_SCHEMA_NAME = 'engine-spec-driven';
 const KEBAB_SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** guidance와 테스트에서 공유하는 팀 capability 이름 예시. */
-export const TEAM_CAPABILITY_EXAMPLE = 'order-payment_refund-api_fix-timeout';
+export const TEAM_CAPABILITY_EXAMPLE = 'order-payment_refund-api_timeout-fix';
 
 /**
  * 팀 capability 이름이 `_`로 구분된 세 개의 kebab-case segment인지 검증한다.
@@ -26,7 +26,7 @@ export function isValidTeamCapabilityName(name: string): boolean {
     return false;
   }
   const segments = name.split('_');
-  // 정확히 대기능_소기능_이슈명 세 segment여야 한다.
+  // 정확히 대기능_중기능_소기능 세 segment여야 한다.
   if (segments.length !== 3) {
     return false;
   }
@@ -51,7 +51,7 @@ export function teamCapabilityNameIssue(
     path: where,
     message:
       `Capability name "${name}" must use the team format ` +
-      `major-feature_minor-feature_issue-name: three '_'-separated kebab-case ` +
+      `대기능_중기능_소기능: three '_'-separated kebab-case ` +
       `segments (e.g., ${TEAM_CAPABILITY_EXAMPLE}).`,
   };
 }
@@ -74,7 +74,7 @@ export function extractProposalCapabilityNames(content: string): string[] {
     if (!inCapabilities) {
       continue;
     }
-    // `- \`order-payment_refund-api_fix-timeout\`: 설명` 패턴에서 이름만 뽑는다.
+    // `- \`order-payment_refund-api_timeout-fix\`: 설명` 패턴에서 이름만 뽑는다.
     const item = line.match(/^\s*-\s*`([^`]+)`/);
     if (item) {
       const name = item[1].trim();

@@ -40,7 +40,7 @@ function setupTeamProject(schema: 'engine-spec-driven' | 'spec-driven'): {
 
   // change name은 hyphenated(기존 규칙)이고, capability/spec directory만 팀 세 segment 형식을 쓴다.
   const changeName = 'refund-api-timeout-fix';
-  const capabilityName = 'order-payment_refund-api_fix-timeout';
+  const capabilityName = 'order-payment_refund-api_timeout-fix';
   const changeDir = path.join(openspecDir, 'changes', changeName);
   fs.mkdirSync(path.join(changeDir, 'specs', capabilityName), { recursive: true });
   fs.writeFileSync(path.join(changeDir, '.openspec.yaml'), `schema: ${schema}\n`);
@@ -83,8 +83,8 @@ describe('dynamic-engine preset artifact instructions', () => {
     const context = loadChangeContext(projectRoot, changeName);
     const proposal = generateInstructions(context, 'proposal', projectRoot);
     const specs = generateInstructions(context, 'specs', projectRoot);
-    expect((proposal.rules ?? []).join('\n')).toContain('major-feature_minor-feature_issue-name');
-    expect((specs.rules ?? []).join('\n')).toContain('major-feature_minor-feature_issue-name');
+    expect((proposal.rules ?? []).join('\n')).toContain('대기능_중기능_소기능');
+    expect((specs.rules ?? []).join('\n')).toContain('대기능_중기능_소기능');
   });
 
   // 8.3 팀 schema preset은 built-in proposal/specs instruction의 핵심 골자를 유지한다.
@@ -96,7 +96,7 @@ describe('dynamic-engine preset artifact instructions', () => {
     expect(proposal.instruction).toContain('Sections:');
     expect(proposal.instruction).toContain('The Capabilities section is critical');
     expect(proposal.instruction).toContain('Dynamic-engine team additional guidance');
-    expect(proposal.instruction).toContain('major-feature_minor-feature_issue-name');
+    expect(proposal.instruction).toContain('대기능_중기능_소기능');
 
     expect(specs.instruction).toContain('Scenarios MUST use exactly 4 hashtags (`####`)');
     expect(specs.instruction).toContain('MODIFIED requirements workflow');

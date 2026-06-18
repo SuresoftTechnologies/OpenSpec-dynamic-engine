@@ -9,7 +9,7 @@
 ## Capabilities
 
 ### New Capabilities
-<!-- Capabilities being introduced. Replace <name> with major-feature_minor-feature_issue-name. Each creates specs/<name>/spec.md -->
+<!-- Capabilities being introduced. Replace <name> with 대기능_중기능_소기능. Each creates specs/<name>/spec.md -->
 - `<name>`: <brief description of what this capability covers>
 
 ### Modified Capabilities
