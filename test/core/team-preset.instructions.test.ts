@@ -87,6 +87,36 @@ describe('dynamic-engine preset artifact instructions', () => {
     expect((specs.rules ?? []).join('\n')).toContain('대기능_중기능_소기능');
   });
 
+  // 2.1 새 문서 품질 marker가 config context/rules와 schema instruction에 노출된다.
+  it('includes Korean writing quality and section boundary guidance', () => {
+    const context = loadChangeContext(projectRoot, changeName);
+    const proposal = generateInstructions(context, 'proposal', projectRoot);
+    const design = generateInstructions(context, 'design', projectRoot);
+    const specs = generateInstructions(context, 'specs', projectRoot);
+    const tasks = generateInstructions(context, 'tasks', projectRoot);
+
+    expect(proposal.context).toContain('자연스러운 한국어');
+    expect(proposal.context).toContain('첫 문단에는 결론과 필요한 이유를 먼저');
+
+    expect((proposal.rules ?? []).join('\n')).toContain('What Changes와 Impact에 같은 내용을 반복하지 않는다');
+    expect(proposal.instruction).toContain('avoid literal translation-like phrasing');
+    expect(proposal.instruction).toContain('Do not repeat the same content in `What Changes` and `Impact`');
+
+    for (const [artifactId, instructions] of [
+      ['design', design],
+      ['specs', specs],
+      ['tasks', tasks],
+    ] as const) {
+      expect((instructions.rules ?? []).join('\n'), artifactId).toContain(
+        'proposal에서 정한 핵심 용어와 문제 정의, 문체를 이어받는다'
+      );
+      expect(instructions.instruction, artifactId).toContain(
+        'Use the core terms, problem framing, and writing tone established in the proposal'
+      );
+      expect(instructions.instruction, artifactId).toContain('Apply proposal style/structure feedback');
+    }
+  });
+
   // 8.3 팀 schema preset은 built-in proposal/specs instruction의 핵심 골자를 유지한다.
   it('preserves built-in proposal and specs guidance while adding team guidance', () => {
     const context = loadChangeContext(projectRoot, changeName);
