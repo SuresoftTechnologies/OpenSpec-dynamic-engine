@@ -46,5 +46,5 @@
 ## 8. 배포 준비
 
 - [x] 8.1 세 저장소 diff와 사용자 미커밋 파일 비영향을 최종 확인한다.
-- [ ] 8.2 `feature/WOR-1767-v1.11반영` 브랜치를 각 원격에 push한다.
-- [ ] 8.3 팀 OpenSpec은 `main`, `engine`과 `ct-maven`은 `master` 대상으로 WOR-1767 PR을 생성한다.
+- [x] 8.2 `feature/WOR-1767-v1.11반영` 브랜치를 각 원격에 push한다.
+- [x] 8.3 팀 OpenSpec은 `main`, `engine`과 `ct-maven`은 `master` 대상으로 WOR-1767 PR을 생성한다.
