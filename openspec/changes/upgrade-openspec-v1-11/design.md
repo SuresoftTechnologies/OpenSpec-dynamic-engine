@@ -50,6 +50,10 @@ legacy ID `a_b_c`는 `a/b/c`로 일대일 변환한다. 실행 전에 전체 변
 
 개발·검증 단계에서는 source `link` 설치를 유지하되 저장소 `packageManager`에 고정된 pnpm을 사용한다. installer는 공식 update check를 비활성화한 환경에서 대상 프로젝트의 `openspec update`를 실행하고, config를 백업·적용한 뒤 schema와 생성물을 검증한다. 공식 npm 최신 버전은 정보로만 다루며 팀 CLI를 자동 교체하지 않는다.
 
+AI 진입점은 신규 설치용 `openspec-local-installer`와 기존 설치 갱신용 `openspec-local-updater`로 나눈다. updater는 읽기 전용 진단으로 설치 버전, 팀 배포판 여부, link/copy 방식과 증명 가능한 source 경로를 먼저 수집한다. source branch나 target 저장소처럼 남은 불확실성만 사용자에게 질문한다. 실제 build/install은 하나의 설치 스크립트를 공유해 두 경로의 설치 결과가 달라지지 않게 한다.
+
+updater가 source checkout을 최신화할 때는 clean tracking branch의 fast-forward만 허용한다. legacy spec 이동은 target 상태와 dry-run 변환표를 먼저 확인한 뒤 명시적 요청이나 승인이 있을 때만 실행한다. 이 경계로 source의 미커밋 변경과 제품 spec을 자동으로 숨기거나 덮어쓰지 않는다.
+
 ### Jira는 v1.11 archive 트랜잭션 안에서 처리
 
 Jira key 해석과 메타데이터 준비는 archive destination 확정 전에 수행한다. 실제 change와 metadata 이동은 v1.11의 staging/rollback 경계를 따른다. Store를 대상으로 하더라도 Jira branch는 사용자가 명령을 시작한 작업 저장소에서 조회한다. JSON 모드에서는 구조화된 Jira 필드를 출력하고 stdout에 사람용 로그를 섞지 않는다.

@@ -1,70 +1,48 @@
 ---
 name: openspec-local-installer
-description: Install this repository's customized @fission-ai/openspec CLI, apply bundled team configuration, and migrate legacy team spec IDs to three-depth nested paths in a target project, guiding the user in Korean.
+description: Install this repository's customized @fission-ai/openspec CLI for the first time and apply the bundled team workflow to a target repository. Use openspec-local-updater instead when a team installation already exists or legacy team specs need upgrading.
 ---
 
 # OpenSpec Local Installer
 
-Use this skill to install the customized OpenSpec CLI from this repository and prepare another repository to use the bundled `engine-spec-driven` team workflow.
+Use this skill for a new installation of the Suresoft team OpenSpec distribution. Guide the user in Korean. Keep command snippets exact and explain only decisions, warnings, and next actions that affect the result.
 
-Guide the user in Korean by default. Keep command snippets exact, but explain what each step does, warnings, and next actions in Korean.
+Do not use this skill to refresh an existing team installation. If the installed `@fission-ai/openspec` package has `openspecDistribution: suresoft-dynamic-engine`, switch to `openspec-local-updater`.
 
-## Quick Workflow
+## Required Inputs
 
-1. Find the customized OpenSpec repository root. It must contain `package.json` with `name: "@fission-ai/openspec"`.
-2. Run the installer script from that repository. If the user has a target repository, pass `--target` so installation, team-config application, `openspec update`, schema validation, and strict project validation happen in one flow. Add `--migrate-specs` only after reviewing the dry run described below:
+Resolve inputs from the request and local context before asking questions:
 
-   ```powershell
-   node .codex/skills/openspec-local-installer/scripts/install-custom-openspec.mjs --repo D:\src\OpenSpec-dynamic-engine --mode link --target D:\path\to\target-repo --migrate-specs
-   ```
+- **Source repository**: use the current repository when its `package.json` identifies `@fission-ai/openspec` and `suresoft-dynamic-engine`; otherwise ask for its path.
+- **Target repository**: use an explicitly named repository. If none is named, ask whether this is CLI-only or which project should receive team config.
+- **Install mode**: recommend `global-copy` for ordinary users and `link` for developers who want source edits reflected after rebuild. Ask only when the intent does not imply one.
 
-3. If the user installed first and wants team config applied later, run:
+Check `npm ls -g @fission-ai/openspec --depth=0 --json --long` before installation. An official or missing package is a valid first-time team install. An existing team distribution belongs to the updater skill.
 
-   ```powershell
-   node .codex/skills/openspec-local-installer/scripts/apply-team-config.mjs --source D:\src\OpenSpec-dynamic-engine --target D:\path\to\target-repo
-   ```
+## Install
 
-4. Preview legacy team spec migration before applying it independently:
+For an ordinary user with a target project, run:
 
-   ```powershell
-   node .codex/skills/openspec-local-installer/scripts/migrate-team-spec-paths.mjs --target D:\path\to\target-repo
-   node .codex/skills/openspec-local-installer/scripts/migrate-team-spec-paths.mjs --target D:\path\to\target-repo --write
-   ```
+```powershell
+node <source-repo>/.codex/skills/openspec-local-installer/scripts/install-custom-openspec.mjs --repo <source-repo> --mode global-copy --target <target-repo>
+```
 
-5. If team config or migration was applied with a standalone script, refresh generated agent guidance and validate:
-
-   ```powershell
-   cd D:\path\to\target-repo
-   openspec update
-   openspec schema validate engine-spec-driven
-   openspec validate --all --strict --no-interactive
-   ```
-
-## Installer Behavior
-
-Prefer `--mode link` during development because changes in this repository are reflected after rebuilding.
-
-Use `--mode global-copy` only when the user wants a copied global install.
+Use `--mode link` only for source development. Do not add `--migrate-specs` in this fresh-install workflow. If the target contains legacy `대분류_소분류_주제` IDs, route to `openspec-local-updater` so the migration is previewed and approved before files move.
 
 The installer:
-- checks Node version and verifies this is the Suresoft team distribution;
-- activates the exact `pnpm` version pinned in `package.json` through Corepack;
-- runs `corepack pnpm install --force` and `corepack pnpm run build`;
-- removes the previous global `@fission-ai/openspec` install unless `--skip-uninstall` is passed;
-- runs either `npm link` or `npm install -g .`;
-- verifies `openspec --version` and prints the resolved executable path.
-- applies bundled team config when `--target <repo>` is passed;
-- migrates legacy `대분류_소분류_주제` IDs when `--migrate-specs` is passed;
-- runs `openspec update` unless `--skip-target-update` is passed;
-- validates the team schema and all artifacts strictly unless `--skip-target-validation` is passed.
 
-The team distribution does not offer the official npm self-update path. Upgrade by pulling this repository's reviewed release branch and rerunning the installer so team patches are never replaced by the official package.
+- verifies Node and the Suresoft distribution;
+- activates the exact pnpm version pinned in `package.json`;
+- installs dependencies, builds, and installs or links the CLI globally;
+- prints the installed version and executable path;
+- applies `docs/team-config` when a target is supplied;
+- runs `openspec update`, schema validation, and strict artifact validation.
 
-If the user does not provide a target repository path, ask whether they want to apply the bundled `docs/team-config` to a working repository. Do not assume the OpenSpec source repository is the target repository.
+Do not use `--skip-target-update` or `--skip-target-validation` unless the user explicitly requests a diagnostic-only run. A failed validation means the installation is incomplete; report the failing artifact and leave its files available for correction.
 
-## Team Config Behavior
+## Team Config Model
 
-The team config script copies:
+The script copies:
 
 ```text
 docs/team-config/engine.config.yaml
@@ -74,28 +52,6 @@ docs/team-config/engine-spec-driven/
   -> <target>/openspec/schemas/engine-spec-driven/
 ```
 
-If `<target>/openspec/config.yaml` already exists, the script backs it up before overwriting unless `--no-backup` is passed.
-If the file already matches the bundled config, it is left untouched and no redundant backup is created.
+It backs up a differing existing config and avoids redundant backups when the bytes already match. Explain that config and schema are project-local and that team capability IDs use exactly three kebab-case segments: `대분류/소분류/주제`.
 
-After applying config, explain this model to the user:
-- `openspec/config.yaml` is project-local, not machine-global.
-- `schema: engine-spec-driven` selects the project-local schema.
-- `engine-spec-driven/schema.yaml` replaces the default `spec-driven` instructions; default instructions are not inherited.
-- `config.yaml` contributes `context` and artifact-specific `rules` to `openspec instructions`.
-- Team capability IDs use exactly three nested kebab-case segments: `대분류/소분류/주제`.
-
-## Spec Migration Behavior
-
-The migration script scans main specs and active change delta specs, but never archived changes. It:
-
-- accepts legacy IDs only when they contain exactly three valid underscore-separated segments;
-- maps them to the equivalent three-depth path;
-- updates active OpenSpec text references;
-- checks invalid IDs and destination collisions before changing anything;
-- runs as a dry run unless `--write` is supplied and rolls back partial work on failure.
-
-Commit or otherwise preserve the target repository state before using `--write`. Review the printed mapping because application source imports or links outside `openspec/` are intentionally not rewritten.
-
-## Troubleshooting
-
-Read `references/troubleshooting.md` when installation fails or the user mentions `pnpm`, `corepack`, `approve-builds`, `esbuild`, PATH, or an old `openspec` still being used.
+If installation fails or the user mentions pnpm, Corepack, approve-builds, esbuild, PATH, or an unexpected old CLI, read [references/troubleshooting.md](references/troubleshooting.md).

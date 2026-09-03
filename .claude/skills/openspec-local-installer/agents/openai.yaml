@@ -1,4 +1,4 @@
 interface:
   display_name: "OpenSpec Local Installer"
-  short_description: "Install team OpenSpec and migrate nested spec paths."
-  default_prompt: "Install the customized OpenSpec CLI, apply team configuration, preview any legacy spec migration, and validate my target repository."
+  short_description: "Install team OpenSpec in a new local environment."
+  default_prompt: "Use $openspec-local-installer to install the team OpenSpec CLI for the first time and configure my target repository."

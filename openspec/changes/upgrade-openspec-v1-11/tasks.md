@@ -48,3 +48,10 @@
 - [x] 8.1 세 저장소 diff와 사용자 미커밋 파일 비영향을 최종 확인한다.
 - [x] 8.2 `feature/WOR-1767-v1.11반영` 브랜치를 각 원격에 push한다.
 - [x] 8.3 팀 OpenSpec은 `main`, `engine`과 `ct-maven`은 `master` 대상으로 WOR-1767 PR을 생성한다.
+
+## 9. 설치와 업데이트 Skill 분리
+
+- [x] 9.1 `openspec-local-installer`를 신규 설치 전용으로 좁히고 기존 팀 설치는 updater로 안내하는지 Skill validation으로 확인한다.
+- [x] 9.2 `openspec-local-updater`가 기존 설치 방식과 source를 탐색하고 필요한 입력만 질문하도록 구현하며 진단 테스트 통과로 확인한다.
+- [x] 9.3 Codex, Claude, shared agents용 Skill 사본을 동기화하고 신규 설치와 기존 업데이트 실제 흐름이 모두 strict validation을 통과하는지 확인한다.
+- [ ] 9.4 변경을 기존 WOR-1767 브랜치와 PR에 push하고 원격 head commit 갱신으로 확인한다.

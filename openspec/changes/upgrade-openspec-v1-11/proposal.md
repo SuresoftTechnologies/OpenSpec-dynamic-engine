@@ -8,6 +8,7 @@
 - Jira 키 기반 아카이브 이름과 메타데이터, 팀 schema 선택 시의 추가 검증, 한글 문서·TDD 지침을 최신 아키텍처에 맞게 포팅한다.
 - 팀 capability 경로를 `대분류/소분류/주제`의 정확한 3-depth nested 경로로 변경하고 각 segment에 kebab-case를 적용한다.
 - 팀 CLI 설치와 프로젝트 설정 갱신을 한 흐름으로 제공하고, 공식 npm 업데이트가 팀 커스텀 CLI를 덮어쓰지 않도록 자체 업데이트 경계를 둔다.
+- 신규 설치는 `openspec-local-installer`, 기존 팀 설치의 갱신은 `openspec-local-updater`로 역할을 분리하고 AI가 설치 상태에서 확인할 수 없는 입력만 질문한다.
 - `engine`과 `ct-maven`의 기존 main spec 및 활성 delta spec을 nested 경로로 이동하고 모든 참조를 갱신한다.
 - `engine` 임시 브랜치에서 실제 업그레이드 명령과 신규 nested spec 생성을 검증한다.
 - **BREAKING** 팀 schema를 사용하는 신규 capability는 기존 underscore 이름 대신 정확한 3-depth 경로를 사용해야 한다.
@@ -16,7 +17,7 @@
 
 ### New Capabilities
 
-- `team/distribution/installation`: 팀에서 승인한 OpenSpec CLI 설치, 프로젝트 설정 적용, 생성된 Skill 갱신과 버전 확인을 하나의 사용자 흐름으로 제공한다.
+- `team/distribution/installation`: 팀에서 승인한 OpenSpec CLI의 신규 설치와 기존 설치 업데이트를 구분하고, 프로젝트 설정 적용, 생성된 Skill 갱신과 버전 확인을 안전한 사용자 흐름으로 제공한다.
 - `team/spec/migration`: 기존 underscore capability를 3-depth nested 경로로 안전하게 마이그레이션하고 검증하는 동작을 정의한다.
 
 ### Modified Capabilities
