@@ -8,6 +8,7 @@ import {
   generateInstructions,
 } from '../../src/core/artifact-graph/index.js';
 import { generateApplyInstructions } from '../../src/commands/workflow/instructions.js';
+import { readProjectConfig } from '../../src/core/project-config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
@@ -40,7 +41,7 @@ function setupTeamProject(schema: 'engine-spec-driven' | 'spec-driven'): {
 
   // change name은 hyphenated(기존 규칙)이고, capability/spec directory만 팀 세 segment 형식을 쓴다.
   const changeName = 'refund-api-timeout-fix';
-  const capabilityName = 'order-payment_refund-api_timeout-fix';
+  const capabilityName = path.join('order-payment', 'refund-api', 'timeout-fix');
   const changeDir = path.join(openspecDir, 'changes', changeName);
   fs.mkdirSync(path.join(changeDir, 'specs', capabilityName), { recursive: true });
   fs.writeFileSync(path.join(changeDir, '.openspec.yaml'), `schema: ${schema}\n`);
@@ -83,8 +84,8 @@ describe('dynamic-engine preset artifact instructions', () => {
     const context = loadChangeContext(projectRoot, changeName);
     const proposal = generateInstructions(context, 'proposal', projectRoot);
     const specs = generateInstructions(context, 'specs', projectRoot);
-    expect((proposal.rules ?? []).join('\n')).toContain('대기능_중기능_소기능');
-    expect((specs.rules ?? []).join('\n')).toContain('대기능_중기능_소기능');
+    expect((proposal.rules ?? []).join('\n')).toContain('대분류/소분류/주제');
+    expect((specs.rules ?? []).join('\n')).toContain('대분류/소분류/주제');
   });
 
   // 2.1 새 문서 품질 marker가 config context/rules와 schema instruction에 노출된다.
@@ -99,8 +100,8 @@ describe('dynamic-engine preset artifact instructions', () => {
     expect(proposal.context).toContain('첫 문단에는 결론과 필요한 이유를 먼저');
 
     expect((proposal.rules ?? []).join('\n')).toContain('What Changes와 Impact에 같은 내용을 반복하지 않는다');
-    expect(proposal.instruction).toContain('avoid literal translation-like phrasing');
-    expect(proposal.instruction).toContain('Do not repeat the same content in `What Changes` and `Impact`');
+    expect(proposal.instruction).toContain('Write reviewer-facing prose in Korean');
+    expect(proposal.instruction).toContain('do not repeat them');
 
     for (const [artifactId, instructions] of [
       ['design', design],
@@ -110,10 +111,8 @@ describe('dynamic-engine preset artifact instructions', () => {
       expect((instructions.rules ?? []).join('\n'), artifactId).toContain(
         'proposal에서 정한 핵심 용어와 문제 정의, 문체를 이어받는다'
       );
-      expect(instructions.instruction, artifactId).toContain(
-        'Use the core terms, problem framing, and writing tone established in the proposal'
-      );
-      expect(instructions.instruction, artifactId).toContain('Apply proposal style/structure feedback');
+      expect(instructions.instruction.toLowerCase(), artifactId).toContain('carry forward');
+      expect(instructions.instruction.toLowerCase(), artifactId).toContain("proposal's terminology");
     }
   });
 
@@ -126,7 +125,7 @@ describe('dynamic-engine preset artifact instructions', () => {
     expect(proposal.instruction).toContain('Sections:');
     expect(proposal.instruction).toContain('The Capabilities section is critical');
     expect(proposal.instruction).toContain('Dynamic-engine team additional guidance');
-    expect(proposal.instruction).toContain('대기능_중기능_소기능');
+    expect(proposal.instruction).toContain('대분류/소분류/주제');
 
     expect(specs.instruction).toContain('Scenarios MUST use exactly 4 hashtags (`####`)');
     expect(specs.instruction).toContain('MODIFIED requirements workflow');
@@ -147,9 +146,9 @@ describe('dynamic-engine preset artifact instructions', () => {
 
     expect(tasks.instruction).toContain('Follow the template below exactly');
     expect(tasks.instruction).toContain('Each task MUST be a checkbox: `- [ ] X.Y Task description`');
-    expect(tasks.instruction).toContain('Each task should be verifiable');
+    expect(tasks.instruction).toContain('Each task MUST state how to verify completion');
     expect(tasks.instruction).toContain('Dynamic-engine team additional guidance');
-    expect(tasks.instruction).toContain('테스트 우선');
+    expect(tasks.instruction).toContain('test-first policy');
   });
 });
 
@@ -164,44 +163,50 @@ describe('dynamic-engine preset apply instructions', () => {
   // 1.4 / 3.1 / 3.2 / 3.3 팀 schema apply instruction이 팀 구현 원칙을 포함한다.
   it('returns team TDD, Korean comment, and task completion guidance', async () => {
     ({ projectRoot, changeName } = setupTeamProject('engine-spec-driven'));
-    const apply = await generateApplyInstructions(projectRoot, changeName);
+    const apply = await generateApplyInstructions(projectRoot, changeName, undefined, {
+      projectConfig: readProjectConfig(projectRoot),
+    });
+    const guidance = (apply.operationGuidance ?? []).join('\n');
 
     expect(apply.schemaName).toBe('engine-spec-driven');
     // 3.1 테스트 우선 / 구현 시작 순서 / 의도 정리
-    expect(apply.instruction).toContain('실패하는 테스트를 먼저 작성');
-    expect(apply.instruction).toContain('테스트가 존재한 뒤 구현을 시작');
-    expect(apply.instruction).toContain('테스트 의도와 기대 동작을 정리');
+    expect(guidance).toContain('실패하는 테스트를 먼저 작성');
+    expect(guidance).toContain('테스트가 존재하고 실패하는지 확인한 뒤 구현을 시작');
+    expect(guidance).toContain('테스트 의도와 기대 동작을 정리');
     // 3.2 한글 주석
-    expect(apply.instruction).toContain('한글 주석');
+    expect(guidance).toContain('한글 주석');
     // 3.3 테스트 통과 후 task 완료
-    expect(apply.instruction).toContain('테스트 통과가 끝난 뒤에만 task를 완료');
+    expect(guidance).toContain('테스트 통과가 끝난 뒤에만 task를 완료');
   });
 
   // 7.3 생성되는 테스트의 spec 출처 추적 주석 형식을 apply instruction에 노출한다.
   it('returns test traceability comment format guidance', async () => {
     ({ projectRoot, changeName } = setupTeamProject('engine-spec-driven'));
-    const apply = await generateApplyInstructions(projectRoot, changeName);
+    const apply = await generateApplyInstructions(projectRoot, changeName, undefined, {
+      projectConfig: readProjectConfig(projectRoot),
+    });
+    const guidance = (apply.operationGuidance ?? []).join('\n');
 
     expect(apply.schemaName).toBe('engine-spec-driven');
-    expect(apply.instruction).toContain('생성되는 테스트 바로 앞');
-    expect(apply.instruction).toContain('테스트 의도');
-    expect(apply.instruction).toContain('목적');
-    expect(apply.instruction).toContain('출처');
-    expect(apply.instruction).toContain('기대 동작');
-    expect(apply.instruction).toContain('<spec path> > Requirement: <이름> > Scenario: <이름>');
+    expect(guidance).toContain('생성되는 테스트 바로 앞');
+    expect(guidance).toContain('테스트 의도');
+    expect(guidance).toContain('목적');
+    expect(guidance).toContain('출처');
+    expect(guidance).toContain('기대 동작');
+    expect(guidance).toContain('<spec path> > Requirement: <이름> > Scenario: <이름>');
   });
 
   // 8.3 팀 schema apply instruction은 built-in apply flow를 유지한 뒤 팀 지침을 추가한다.
   it('preserves built-in apply flow before adding team guidance', async () => {
     ({ projectRoot, changeName } = setupTeamProject('engine-spec-driven'));
-    const apply = await generateApplyInstructions(projectRoot, changeName);
+    const apply = await generateApplyInstructions(projectRoot, changeName, undefined, {
+      projectConfig: readProjectConfig(projectRoot),
+    });
+    const guidance = (apply.operationGuidance ?? []).join('\n');
 
     expect(apply.instruction).toContain('Read context files, work through pending tasks');
     expect(apply.instruction).toContain('Pause if you hit blockers or need clarification');
-    expect(apply.instruction).toContain('Dynamic-engine team implementation guidance');
-    expect(apply.instruction.indexOf('Read context files')).toBeLessThan(
-      apply.instruction.indexOf('Dynamic-engine team implementation guidance')
-    );
+    expect(guidance).toContain('실패하는 테스트를 먼저 작성');
   });
 
   // 3.4 built-in spec-driven schema는 기존 apply instruction을 유지한다.

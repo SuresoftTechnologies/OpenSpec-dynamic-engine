@@ -11,6 +11,7 @@ import { generateSkillContent } from '../../../src/core/shared/skill-generation.
 const HARDCODED_TEAM_POLICY_MARKERS = [
   '한글',
   '대기능_중기능_소기능',
+  '대분류/소분류/주제',
   'engine-spec-driven',
 ];
 

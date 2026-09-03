@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenSpec Local Updater"
+  short_description: "Update an existing team OpenSpec installation safely."
+  default_prompt: "Use $openspec-local-updater to update my existing team OpenSpec installation and refresh a target repository."

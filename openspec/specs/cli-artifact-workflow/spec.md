@@ -25,14 +25,31 @@ The system SHALL display artifact completion status for a change, including scaf
 #### Scenario: Status JSON output
 
 - **WHEN** user runs `openspec status --change <id> --json`
-- **THEN** the system outputs JSON with changeName, schemaName, isComplete, and artifacts array
+- **THEN** the system outputs JSON with changeName, schemaName, isPlanningComplete, isComplete, and artifacts array
+- **AND** `isPlanningComplete` is true only when every non-skipped planning artifact exists
+- **AND** a skipped artifact counts as satisfied without being created
+- **AND** `isComplete` remains a compatibility alias with the same value
 
 #### Scenario: Status JSON includes apply requirements
 
 - **WHEN** user runs `openspec status --change <id> --json`
 - **THEN** the system outputs JSON with:
-  - `changeName`, `schemaName`, `isComplete`, `artifacts` array
+  - `changeName`, `schemaName`, `isPlanningComplete`, `isComplete`, `artifacts` array
   - `applyRequires`: array of artifact IDs needed for apply phase
+
+#### Scenario: Status JSON exposes each artifact's dependency edges
+
+- **WHEN** user runs `openspec status --change <id> --json`
+- **THEN** every entry in the `artifacts` array includes `requires`: the array of artifact IDs it directly depends on
+- **AND** `requires` is present regardless of the artifact's status, so a `done` artifact still reports its dependencies (letting agents compute the transitive required set from status alone)
+
+#### Scenario: Status lists artifacts in dependency order, declaration order breaking ties
+
+- **WHEN** user runs `openspec status --change <id>` (text or `--json`)
+- **THEN** artifacts appear in dependency order, so a dependency is never listed after something that requires it
+- **AND** artifacts that become ready at the same time keep the order the schema declares them, rather than being reordered alphabetically
+- **AND** the first `ready` entry is therefore the artifact to write next
+- **AND** a blocked artifact's `missingDeps` uses that same order
 
 #### Scenario: Status on scaffolded change
 
@@ -61,6 +78,7 @@ The workflow SHALL use `openspec status` output to determine what can be created
 
 - **WHEN** a user needs to know which artifact to create next
 - **THEN** `openspec status --change <id>` identifies ready artifacts with `[ ]`
+- **AND** the first `[ ]` entry is the schema's recommended next artifact
 - **AND** no dedicated "next command" is required to continue the workflow
 
 ### Requirement: Instructions Command
@@ -134,29 +152,6 @@ The system SHALL create new change directories with validation.
 #### Scenario: Create with description
 - **WHEN** user runs `openspec new change add-feature --description "Add new feature"`
 - **THEN** the system creates the change directory with description in README.md
-
-### Requirement: Workspace Setup Commands
-The CLI artifact workflow SHALL expose workspace setup commands before change creation.
-
-#### Scenario: Preparing workspace planning before a change
-- **WHEN** a user needs to prepare workspace planning across repos or folders
-- **THEN** the CLI SHALL provide commands to set up, list, link, relink, and doctor workspaces
-- **AND** those commands SHALL not require an active workspace change
-
-#### Scenario: Listing workspaces with a short command
-- **WHEN** a user wants a concise workspace list command
-- **THEN** the CLI SHALL support `openspec workspace ls`
-- **AND** it SHALL behave the same as `openspec workspace list`
-
-#### Scenario: Keeping setup separate from agent launch
-- **WHEN** a user completes workspace setup
-- **THEN** the setup workflow SHALL leave agent launch and workspace open behavior to a later workflow
-- **AND** setup SHALL not require a preferred agent choice
-
-#### Scenario: Avoiding public direct creation
-- **WHEN** users create a workspace in the first workspace setup flow
-- **THEN** the CLI SHALL use `openspec workspace setup`
-- **AND** it SHALL not expose `openspec workspace create` as the public creation path
 
 ### Requirement: Schema Selection
 The system SHALL support custom schema selection for workflow commands.
@@ -299,24 +294,7 @@ The setup command SHALL display clear output about what was generated.
 - **THEN** output includes message: "Command generation skipped - no adapter for <tool>"
 
 ### Requirement: Status JSON provides planning context
-The status command SHALL provide machine-readable planning context for repo-local and workspace changes.
-
-#### Scenario: Reporting planning home
-- **WHEN** a user runs `openspec status --change <id> --json`
-- **THEN** the output SHALL identify whether the change is repo-local or workspace-scoped
-- **AND** it SHALL include the planning home root and change root
-
-#### Scenario: Reporting concrete artifact paths
-- **WHEN** a user runs `openspec status --change <id> --json`
-- **THEN** the output SHALL include concrete paths for existing artifacts
-- **AND** agents SHALL be able to read those paths without assuming `openspec/changes/<id>/`
-- **AND** workspace-scoped nested spec paths SHALL be reported without flattening the area or capability path
-
-#### Scenario: Reporting workspace affected areas
-- **GIVEN** the change is workspace-scoped
-- **WHEN** a user runs `openspec status --change <id> --json`
-- **THEN** the output SHALL include known affected areas
-- **AND** it SHALL indicate when affected areas remain unresolved without requiring an additional area manifest artifact
+The status command SHALL provide machine-readable planning context for changes.
 
 #### Scenario: Reporting next steps
 - **WHEN** a user runs `openspec status --change <id> --json`
@@ -326,16 +304,6 @@ The status command SHALL provide machine-readable planning context for repo-loca
 ### Requirement: Status JSON action context
 The status command SHALL expose action context that lets agents act without hardcoded filesystem assumptions.
 
-#### Scenario: Planning action context
-- **WHEN** a workspace change is still in planning
-- **THEN** status JSON SHALL identify the planning artifacts agents may read or update
-- **AND** it SHALL indicate that linked repos and folders are context for exploration
-
-#### Scenario: Implementation action context
-- **WHEN** a workspace change has a selected affected area for implementation
-- **THEN** status JSON SHALL include the allowed edit root for that area
-- **AND** it SHALL avoid authorizing edits outside that selected area
-
 #### Scenario: Repo-local action context
 - **GIVEN** the change is repo-local
 - **WHEN** a user runs `openspec status --change <id> --json`
@@ -344,12 +312,6 @@ The status command SHALL expose action context that lets agents act without hard
 
 ### Requirement: Instructions use resolved planning paths
 Artifact and apply instructions SHALL use resolved planning paths rather than hardcoded repo-local change paths.
-
-#### Scenario: Workspace artifact instructions
-- **GIVEN** the change is workspace-scoped
-- **WHEN** a user runs `openspec instructions <artifact> --change <id> --json`
-- **THEN** instruction output SHALL point to the artifact path under the workspace change root
-- **AND** it SHALL not instruct the agent to write under a linked repo unless an explicit implementation context allows it
 
 #### Scenario: Repo-local artifact instructions
 - **GIVEN** the change is repo-local
@@ -369,110 +331,53 @@ Generated workflow skills SHALL use OpenSpec CLI output as the source of truth f
 - **THEN** it SHALL instruct the agent to run `openspec instructions <artifact> --change <id> --json`
 - **AND** it SHALL write to the resolved artifact path returned by the command
 
-#### Scenario: Skills avoid hardcoded repo-local paths
-- **WHEN** generated workflow skills describe artifact locations
-- **THEN** they SHALL avoid hardcoded examples that require changes to live under `openspec/changes/<id>/`
-- **AND** any examples SHALL defer to CLI-reported paths for repo-local and workspace-scoped changes
+### Requirement: Config Based Team Apply Guidance
+Artifact workflow SHALL dynamic-engine 팀 구현 정책을 project-local config의 `operations.apply.guidance`로 전달한다.
 
-#### Scenario: Skills guard unsupported workspace workflows
-- **GIVEN** a generated workflow skill is selected by the global profile
-- **AND** the workflow does not yet have full workspace-scoped behavior in this slice
-- **WHEN** the skill is used for a workspace-scoped change
-- **THEN** it SHALL tell the agent that the workspace action is not supported yet
-- **AND** it SHALL not instruct the agent to fall back to repo-local paths or edit linked repos without an explicit allowed edit root
+#### Scenario: TDD apply guidance
+- **WHEN** 팀 preset이 적용된 저장소에서 사용자가 `openspec instructions apply --change <id> --json`을 실행한다
+- **THEN** 응답의 `operationGuidance`는 실패하는 테스트를 먼저 작성하도록 안내한다
+- **AND** 구현 전 테스트 의도와 기대 동작을 정리하고 테스트 실패를 확인한 뒤 구현하도록 안내한다
 
-### Requirement: Workspace schema instructions
-Workflow commands SHALL use the workspace planning schema instructions for workspace-scoped changes that use that schema.
+#### Scenario: 한글 주석과 테스트 추적성
+- **WHEN** 팀 preset이 적용된 저장소에서 apply 지침을 요청한다
+- **THEN** `operationGuidance`는 중요한 로직과 함수에 한글 주석을 작성하도록 안내한다
+- **AND** 테스트 바로 앞 주석에 `테스트 의도`, `목적`, `출처`, `기대 동작`을 포함하도록 안내한다
+- **AND** 출처는 `<spec path> > Requirement: <이름> > Scenario: <이름>` 형식을 사용한다
 
-#### Scenario: Workspace planning artifact order
-- **GIVEN** a workspace-scoped change uses schema `workspace-planning`
-- **WHEN** a user runs `openspec status --change <id> --json`
-- **THEN** the artifact list SHALL reflect the workspace planning schema
-- **AND** it SHALL include the normal proposal, specs, design, and tasks artifacts
+#### Scenario: Task 완료 기준
+- **WHEN** 팀 preset이 적용된 저장소에서 apply 지침을 요청한다
+- **THEN** `operationGuidance`는 구현과 관련 테스트가 통과한 뒤에만 task를 완료하도록 안내한다
 
-#### Scenario: Workspace specs instructions
-- **GIVEN** a workspace-scoped change uses schema `workspace-planning`
-- **WHEN** a user requests instructions for the specs artifact
-- **THEN** instruction output SHALL guide the agent to organize area-specific requirements under workspace-scoped `specs/` paths
-- **AND** it SHALL not require all affected areas to be finalized before planning can continue
-- **AND** it SHALL not instruct the agent to create repo-local spec files while the change is still in workspace planning
-
-### Requirement: Schema Based Team Apply Guidance
-Artifact workflow SHALL project-local schema의 `apply.instruction`을 통해 dynamic-engine 팀 apply 정책을 전달한다.
-
-#### Scenario: TDD apply instruction
-- **WHEN** 사용자가 `engine-spec-driven` schema를 사용하는 change에서 `openspec instructions apply --change <id> --json`을 실행한다
-- **THEN** 응답의 `instruction`은 task 수행 순서를 테스트 우선으로 안내한다
-- **AND** 실패하는 테스트를 먼저 작성하라는 정책을 포함한다
-- **AND** 테스트가 존재한 뒤 구현을 시작하라는 순서를 포함한다
-- **AND** 구현 전에 테스트 의도와 기대 동작을 정리하라는 지침을 포함한다
-
-#### Scenario: Korean comments apply instruction
-- **WHEN** 사용자가 `engine-spec-driven` schema를 사용하는 change에서 `openspec instructions apply --change <id> --json`을 실행한다
-- **THEN** 응답의 `instruction`은 테스트 목적과 동작을 설명하는 한글 주석을 작성하라는 정책을 포함한다
-- **AND** 중요한 로직과 함수에 한글 주석을 작성하라는 정책을 포함한다
-
-#### Scenario: Test traceability comment format
-- **WHEN** 사용자가 `engine-spec-driven` schema를 사용하는 change에서 `openspec instructions apply --change <id> --json`을 실행한다
-- **THEN** 응답의 `instruction`은 생성되는 테스트 바로 앞에 문서형 주석을 작성하라고 안내한다
-- **AND** 주석은 `테스트 의도`, `목적`, `출처`, `기대 동작` 항목을 포함한다
-- **AND** `출처`는 `<spec path> > Requirement: <이름> > Scenario: <이름>` 형식으로 spec scenario를 추적할 수 있게 안내한다
-
-#### Scenario: Task completion apply instruction
-- **WHEN** 사용자가 `engine-spec-driven` schema를 사용하는 change에서 `openspec instructions apply --change <id> --json`을 실행한다
-- **THEN** 응답의 `instruction`은 구현과 테스트 통과가 끝난 뒤에만 task checkbox를 완료 처리하라는 정책을 포함한다
-
-#### Scenario: Built-in schema remains unchanged
-- **WHEN** 사용자가 built-in `spec-driven` schema를 사용하는 change에서 `openspec instructions apply --change <id> --json`을 실행한다
-- **THEN** 응답의 `instruction`은 built-in schema의 기존 apply instruction을 유지한다
-
-#### Scenario: Team schema apply instruction extends built-in flow
-- **WHEN** 사용자가 `engine-spec-driven` schema를 사용하는 change에서 `openspec instructions apply --change <id> --json`을 실행한다
-- **THEN** 응답의 `instruction`은 built-in apply flow의 기본 진행 지침을 유지한다
-- **AND** dynamic-engine 팀 구현 원칙을 추가 지침으로 포함한다
+#### Scenario: Built-in apply instruction 보존
+- **WHEN** 팀 `operationGuidance`가 apply 응답에 추가된다
+- **THEN** schema의 built-in `instruction`은 그대로 유지된다
+- **AND** 팀 정책은 별도 `operationGuidance` 배열로 제공된다
 
 ### Requirement: Config Based Team Artifact Guidance
-Artifact workflow SHALL 기존 `openspec/config.yaml`의 `context`와 `rules`를 통해 dynamic-engine 팀 artifact 작성 정책을 전달한다.
+Artifact workflow SHALL `openspec/config.yaml`의 `context`와 artifact별 `rules`를 통해 dynamic-engine 팀 문서 정책을 전달한다.
 
-#### Scenario: Korean document guidance
-- **WHEN** 사용자가 dynamic-engine config preset이 적용된 repository에서 `openspec instructions proposal`, `design`, `tasks`, 또는 `specs`를 요청한다
-- **THEN** 응답은 문서 본문을 한글로 작성하라는 팀 정책을 포함한다
-- **AND** command, code, config key, path, OpenSpec parser keyword는 원문을 유지할 수 있음을 안내한다
+#### Scenario: 한글 문서와 품질 지침
+- **WHEN** 사용자가 팀 preset 저장소에서 proposal, design, tasks 또는 specs 지침을 요청한다
+- **THEN** 응답은 리뷰 대상 본문을 자연스러운 한글로 작성하도록 안내한다
+- **AND** 첫 문단에 결론과 이유를 먼저 두고 짧은 문장과 문단을 사용하도록 안내한다
 
-#### Scenario: Korean writing quality guidance
-- **WHEN** 사용자가 dynamic-engine config preset이 적용된 repository에서 `openspec instructions proposal`, `design`, `tasks`, 또는 `specs`를 요청한다
-- **THEN** 응답은 번역투를 피하고 자연스러운 한국어로 작성하라는 팀 정책을 포함한다
-- **AND** 응답은 첫 문단에 결론과 이유를 먼저 두라는 팀 정책을 포함한다
+#### Scenario: Proposal section 역할 분리
+- **WHEN** 사용자가 proposal 지침을 요청한다
+- **THEN** `Why`에는 결론과 이유, `What Changes`에는 변경 동작과 산출물, `Impact`에는 영향 범위를 쓰도록 안내한다
+- **AND** `What Changes`와 `Impact`에 같은 내용을 반복하지 않도록 안내한다
 
-#### Scenario: Proposal section boundary guidance
-- **WHEN** 사용자가 dynamic-engine config preset이 적용된 repository에서 `openspec instructions proposal`을 요청한다
-- **THEN** 응답은 `Why`를 두괄식으로 쓰고 짧은 문장과 문단을 유지하라는 팀 정책을 포함한다
-- **AND** 응답은 `What Changes`에는 변경 내용을 쓰고 `Impact`에는 영향 범위와 바뀌지 않는 것을 쓰라는 팀 정책을 포함한다
-- **AND** 응답은 `What Changes`와 `Impact`에 같은 내용을 반복하지 말라는 팀 정책을 포함한다
+#### Scenario: 문서 간 피드백 전파
+- **WHEN** 사용자가 design, specs 또는 tasks 지침을 요청한다
+- **THEN** 응답은 proposal의 용어, 문제 정의와 문체를 이어받도록 안내한다
+- **AND** proposal의 문체나 구조 피드백을 같은 change 문서에 적용하도록 안내한다
 
-#### Scenario: Cross artifact feedback propagation guidance
-- **WHEN** 사용자가 dynamic-engine config preset이 적용된 repository에서 `openspec instructions design`, `specs`, 또는 `tasks`를 요청한다
-- **THEN** 응답은 proposal에서 정한 용어와 문체를 이어받으라는 팀 정책을 포함한다
-- **AND** 응답은 proposal에 대한 문체/구조 피드백을 같은 change의 다른 문서에도 적용하라는 팀 정책을 포함한다
+#### Scenario: 3-depth capability guidance
+- **WHEN** 사용자가 proposal 또는 specs 지침을 요청한다
+- **THEN** 응답은 `대분류/소분류/주제`의 정확한 3-depth와 segment별 kebab-case 규칙을 포함한다
+- **AND** proposal capability ID와 `specs/<capability-path>/spec.md`가 동일한 전체 경로를 사용하도록 안내한다
 
-#### Scenario: Capability naming guidance
-- **WHEN** 사용자가 dynamic-engine config preset이 적용된 repository에서 `openspec instructions proposal` 또는 `specs`를 요청한다
-- **THEN** 응답은 `대기능_중기능_소기능` 형식과 kebab-case segment 정책을 포함한다
-- **AND** proposal `Capabilities` section과 `specs/<capability>/spec.md` directory name에 적용됨을 안내한다
-
-#### Scenario: Generated skill template minimalism
+#### Scenario: Generated template minimalism
 - **WHEN** OpenSpec이 workflow skill 또는 command template을 생성한다
-- **THEN** generated template은 repository별 팀 정책을 hardcode하지 않는다
-- **AND** agent에게 `openspec instructions ... --json`의 dynamic instruction, context, rules를 따르도록 안내한다
-
-#### Scenario: Team artifact instructions extend built-in guidance
-- **WHEN** 사용자가 dynamic-engine schema preset의 proposal, specs, design, tasks instruction을 요청한다
-- **THEN** 응답은 built-in `spec-driven` artifact instruction의 기본 작성 지침을 유지한다
-- **AND** 한글 문서 작성, 팀 capability naming, 테스트 우선 task 작성 같은 팀 지시를 추가로 포함한다
-
-#### Scenario: Team artifact instructions include document quality guidance
-- **WHEN** 사용자가 dynamic-engine schema preset의 proposal, specs, design, tasks instruction을 요청한다
-- **THEN** 응답은 자연스러운 한국어 문체와 두괄식 서술 원칙을 추가 지침으로 포함한다
-- **AND** proposal instruction은 `Why`, `What Changes`, `Impact` section의 역할 구분을 안내한다
-- **AND** design, specs, tasks instruction은 proposal의 문체와 용어를 이어받도록 안내한다
-
+- **THEN** generated template은 저장소별 한국어 또는 capability 이름 정책을 hardcode하지 않는다
+- **AND** agent가 현재 `context`, `rules`, `operationGuidance`를 동적으로 읽어 적용하도록 안내한다
