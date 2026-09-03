@@ -23,28 +23,28 @@
 - [x] 4.1 installer가 package manifest의 고정 pnpm을 사용하고 v1.11에서 제거된 postinstall 우회에 의존하지 않도록 변경한다.
 - [x] 4.2 팀 build에서 공식 npm self-upgrade가 커스텀 CLI를 교체하지 않도록 배포판 보호 로직을 추가한다.
 - [x] 4.3 installer가 config backup, 팀 preset 적용, Skill 갱신, schema/CLI 검증을 한 번에 수행하도록 갱신한다.
-- [ ] 4.4 link와 global-copy 설치의 반복 실행, PATH와 실제 실행 버전 검증 테스트를 보강한다.
+- [x] 4.4 link와 global-copy 설치의 반복 실행, PATH와 실제 실행 버전 검증 테스트를 보강한다.
 
 ## 5. 팀 OpenSpec 검증
 
 - [x] 5.1 집중 단위 테스트와 Windows 경로 회귀 테스트를 실행한다.
-- [ ] 5.2 전체 `pnpm test`, lint와 build를 실행하고 실패를 해소한다.
-- [ ] 5.3 change artifact strict validation과 구현 일치 검증을 완료한다.
+- [x] 5.2 전체 `pnpm test`, lint와 build를 실행하고 실패를 해소한다.
+- [x] 5.3 change artifact strict validation과 구현 일치 검증을 완료한다.
 
 ## 6. 제품 저장소 마이그레이션
 
-- [ ] 6.1 `engine`의 legacy main spec 3개를 nested 경로로 이동하고 팀 config/schema/Skill을 갱신한다.
-- [ ] 6.2 `ct-maven`의 legacy main spec 11개와 활성 delta spec 1개를 nested 경로로 이동하고 참조를 갱신한다.
-- [ ] 6.3 두 제품 저장소에서 전체 spec/change strict validation과 경로 중복 검사를 실행한다.
+- [x] 6.1 `engine`의 legacy main spec 3개를 nested 경로로 이동하고 팀 config/schema/Skill을 갱신한다.
+- [x] 6.2 `ct-maven`의 legacy main spec 11개와 활성 delta spec 1개를 nested 경로로 이동하고 참조를 갱신한다.
+- [x] 6.3 두 제품 저장소에서 전체 spec/change strict validation과 경로 중복 검사를 실행한다.
 
 ## 7. 실제 사용자 업그레이드 측정
 
-- [ ] 7.1 `engine`의 격리된 임시 브랜치에서 최신 팀 installer의 upgrade 흐름을 실제 실행한다.
-- [ ] 7.2 임시 change를 생성해 proposal의 capability가 3-depth delta spec으로 생성되는지 확인한다.
-- [ ] 7.3 생성된 spec을 validate/show하고 시험 파일을 제품 PR에서 제외한다.
+- [x] 7.1 `engine`의 격리된 임시 브랜치에서 최신 팀 installer의 upgrade 흐름을 실제 실행한다.
+- [x] 7.2 임시 change를 생성해 proposal의 capability가 3-depth delta spec으로 생성되는지 확인한다.
+- [x] 7.3 생성된 spec을 validate/show하고 시험 파일을 제품 PR에서 제외한다.
 
 ## 8. 배포 준비
 
-- [ ] 8.1 세 저장소 diff와 사용자 미커밋 파일 비영향을 최종 확인한다.
+- [x] 8.1 세 저장소 diff와 사용자 미커밋 파일 비영향을 최종 확인한다.
 - [ ] 8.2 `feature/WOR-1767-v1.11반영` 브랜치를 각 원격에 push한다.
 - [ ] 8.3 팀 OpenSpec은 `main`, `engine`과 `ct-maven`은 `master` 대상으로 WOR-1767 PR을 생성한다.
