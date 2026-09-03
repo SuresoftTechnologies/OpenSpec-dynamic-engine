@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, cpSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 const args = parseArgs(process.argv.slice(2));
@@ -24,19 +24,26 @@ const targetSchema = join(targetSchemas, basename(sourceSchema));
 
 mkdirSync(targetSchemas, { recursive: true });
 
-if (backup && existsSync(targetConfig)) {
+const configChanged =
+  !existsSync(targetConfig) || readFileSync(sourceConfig, 'utf8') !== readFileSync(targetConfig, 'utf8');
+
+if (backup && existsSync(targetConfig) && configChanged) {
   const backupPath = `${targetConfig}.bak-${timestamp()}`;
   copyFileSync(targetConfig, backupPath);
   console.log(`Backed up existing config: ${backupPath}`);
 }
 
-copyFileSync(sourceConfig, targetConfig);
+if (configChanged) {
+  copyFileSync(sourceConfig, targetConfig);
+} else {
+  console.log('Team config is already current; no config backup or rewrite was needed.');
+}
 cpSync(sourceSchema, targetSchema, { recursive: true, force: true });
 
 console.log(`Applied team config to ${target}`);
 console.log(`Config: ${targetConfig}`);
 console.log(`Schema: ${targetSchema}`);
-console.log('Next: run `openspec schema validate engine-spec-driven`, then `openspec update` in the target repository.');
+console.log('Next: run `openspec update`, validate engine-spec-driven, then validate all artifacts strictly.');
 
 function parseArgs(argv) {
   const parsed = {};

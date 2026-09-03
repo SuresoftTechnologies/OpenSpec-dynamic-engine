@@ -12,27 +12,29 @@ import {
 import { Validator } from '../../src/core/validation/validator.js';
 
 describe('team capability naming validator', () => {
-  // 2.2 세 개의 kebab-case segment로 구성된 팀 capability 이름은 유효해야 한다.
-  it('accepts three-part kebab-case capability names', () => {
-    expect(isValidTeamCapabilityName('order-payment_refund-api_timeout-fix')).toBe(true);
-    expect(isValidTeamCapabilityName('a_b_c')).toBe(true);
-    expect(isValidTeamCapabilityName('major-feature_middle-feature_minor-feature')).toBe(true);
+  // 세 개의 kebab-case segment로 구성된 팀 capability 경로는 유효해야 한다.
+  it('accepts three-depth kebab-case capability paths', () => {
+    expect(isValidTeamCapabilityName('order-payment/refund-api/timeout-fix')).toBe(true);
+    expect(isValidTeamCapabilityName('a/b/c')).toBe(true);
+    expect(isValidTeamCapabilityName('major-feature/middle-feature/minor-feature')).toBe(true);
   });
 
   // 2.2 segment 수가 틀리거나 kebab-case가 아니면 거부해야 한다.
   it('rejects names that are not three kebab-case segments', () => {
     expect(isValidTeamCapabilityName('order-payment')).toBe(false); // segment 부족
-    expect(isValidTeamCapabilityName('a_b_c_d')).toBe(false); // segment 초과
-    expect(isValidTeamCapabilityName('Order_b_c')).toBe(false); // 대문자
-    expect(isValidTeamCapabilityName('a_b c_d')).toBe(false); // 공백
-    expect(isValidTeamCapabilityName('a__c')).toBe(false); // 빈 segment
-    expect(isValidTeamCapabilityName('a_-b_c')).toBe(false); // 잘못된 kebab segment
+    expect(isValidTeamCapabilityName('a/b/c/d')).toBe(false); // segment 초과
+    expect(isValidTeamCapabilityName('Order/b/c')).toBe(false); // 대문자
+    expect(isValidTeamCapabilityName('a/b c/d')).toBe(false); // 공백
+    expect(isValidTeamCapabilityName('a//c')).toBe(false); // 빈 segment
+    expect(isValidTeamCapabilityName('a/-b/c')).toBe(false); // 잘못된 kebab segment
+    expect(isValidTeamCapabilityName('a\\b\\c')).toBe(false); // OS-native separator
+    expect(isValidTeamCapabilityName('a_b_c')).toBe(false); // legacy 형식
     expect(isValidTeamCapabilityName('')).toBe(false);
   });
 
   // 2.2 위반 시 예시를 포함한 guidance ERROR issue를 반환해야 한다.
   it('returns a guidance issue with the example for invalid names', () => {
-    const ok = teamCapabilityNameIssue('order-payment_refund-api_timeout-fix', 'specs/x');
+    const ok = teamCapabilityNameIssue('order-payment/refund-api/timeout-fix', 'specs/x');
     expect(ok).toBeNull();
 
     const issue = teamCapabilityNameIssue('badname', 'specs/badname/spec.md');
@@ -40,16 +42,16 @@ describe('team capability naming validator', () => {
     expect(issue?.level).toBe('ERROR');
     expect(issue?.path).toBe('specs/badname/spec.md');
     expect(issue?.message).toContain(TEAM_CAPABILITY_EXAMPLE);
-    expect(issue?.message).toContain('대기능_중기능_소기능');
+    expect(issue?.message).toContain('대분류/소분류/주제');
   });
 
   // 2.2 proposal Capabilities section에서 capability 이름을 추출한다.
   it('extracts capability names from the proposal Capabilities section', () => {
-    const proposal = `## Why\n어떤 이유\n\n## Capabilities\n\n### New Capabilities\n- \`order-payment_refund-api_timeout-fix\`: 결제 환불\n- \`<name>\`: placeholder는 무시\n\n### Modified Capabilities\n- \`config-loading_team-preset_apply\`: 설정 로딩\n\n## Impact\n- \`not-a-capability\`: 다른 section은 무시\n`;
+    const proposal = `## Why\n어떤 이유\n\n## Capabilities\n\n### New Capabilities\n- \`order-payment/refund-api/timeout-fix\`: 결제 환불\n- \`<name>\`: placeholder는 무시\n\n### Modified Capabilities\n- \`config-loading/team-preset/apply\`: 설정 로딩\n\n## Impact\n- \`not-a-capability\`: 다른 section은 무시\n`;
     const names = extractProposalCapabilityNames(proposal);
     expect(names).toEqual([
-      'order-payment_refund-api_timeout-fix',
-      'config-loading_team-preset_apply',
+      'order-payment/refund-api/timeout-fix',
+      'config-loading/team-preset/apply',
     ]);
   });
 });
@@ -73,7 +75,7 @@ describe('Korean document scaffold placeholder warning', () => {
 
   // 2.3 한글로 채워진 문서에는 warning이 없어야 한다.
   it('does not warn when the document is fully written in Korean', () => {
-    const content = `## Why\n\n이 변경은 팀 정책을 일관되게 적용하기 위한 것이다.\n\n## Capabilities\n\n### New Capabilities\n- \`order-payment_refund-api_timeout-fix\`: 결제 환불 타임아웃 수정\n`;
+    const content = `## Why\n\n이 변경은 팀 정책을 일관되게 적용하기 위한 것이다.\n\n## Capabilities\n\n### New Capabilities\n- \`order-payment/refund-api/timeout-fix\`: 결제 환불 타임아웃 수정\n`;
     const issues = findScaffoldPlaceholderIssues(content, 'proposal.md');
     expect(issues).toHaveLength(0);
   });
@@ -103,7 +105,7 @@ describe('Validator team policy integration', () => {
     const validator = new Validator(false, { teamPolicy: true });
     const report = await validator.validateChangeDeltaSpecs(changeDir);
     const namingError = report.issues.find(
-      (i) => i.level === 'ERROR' && i.message.includes('대기능_중기능_소기능')
+      (i) => i.level === 'ERROR' && i.message.includes('대분류/소분류/주제')
     );
     expect(namingError).toBeDefined();
     expect(namingError?.path).toBe('bad-name/spec.md');
@@ -114,7 +116,31 @@ describe('Validator team policy integration', () => {
     const validator = new Validator(false);
     const report = await validator.validateChangeDeltaSpecs(changeDir);
     const namingError = report.issues.find((i) =>
-      i.message.includes('대기능_중기능_소기능')
+      i.message.includes('대분류/소분류/주제')
+    );
+    expect(namingError).toBeUndefined();
+  });
+
+  // Windows를 포함해 경로 segment 이름이 specs여도 openspec/specs root를 기준으로 ID를 계산한다.
+  it('preserves a nested segment named specs when validating a main spec path', async () => {
+    const specFile = path.join(
+      tempDir,
+      'openspec',
+      'specs',
+      'domain',
+      'specs',
+      'topic',
+      'spec.md'
+    );
+    fs.mkdirSync(path.dirname(specFile), { recursive: true });
+    fs.writeFileSync(
+      specFile,
+      `# 예시\n\n## Purpose\n\n중첩 경로 계산이 내부 specs segment를 루트로 오인하지 않는지 검증한다.\n\n## Requirements\n\n### Requirement: 예시\n시스템은 동작을 제공해야 한다.\n\n#### Scenario: 기본\n- **WHEN** 조건이 주어진다\n- **THEN** 결과를 제공한다\n`
+    );
+
+    const report = await new Validator(false, { teamPolicy: true }).validateSpec(specFile);
+    const namingError = report.issues.find((issue) =>
+      issue.message.includes('대분류/소분류/주제')
     );
     expect(namingError).toBeUndefined();
   });

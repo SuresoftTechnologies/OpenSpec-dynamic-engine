@@ -6,16 +6,11 @@ Try Corepack first:
 
 ```powershell
 corepack enable
-corepack prepare pnpm@latest --activate
-pnpm --version
+corepack prepare pnpm@9.15.9 --activate
+corepack pnpm --version
 ```
 
-If Corepack does not work:
-
-```powershell
-npm install -g pnpm
-pnpm --version
-```
+Use the version in this repository's `package.json#packageManager`; `9.15.9` is the version pinned by the v1.11 baseline. Do not silently substitute `pnpm@latest`.
 
 ## ERR_PNPM_IGNORED_BUILDS for esbuild
 
@@ -27,29 +22,21 @@ pnpm approve-builds
 
 Select `esbuild` with Space and confirm with Enter.
 
-For non-interactive installs, add this to the OpenSpec repository's `package.json`:
-
-```json
-{
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
-  }
-}
-```
-
-Then rerun:
+The v1.11 repository already declares allowed build dependencies. First rerun the reproducible install:
 
 ```powershell
-pnpm install
-pnpm run build
+corepack pnpm install --force
+corepack pnpm run build
 ```
+
+Do not make ad-hoc `package.json` changes from the installer. If the pinned v1.11 configuration still blocks a build, stop and diagnose the lockfile and dependency policy as a source change.
 
 ## Build succeeds but install fails
 
 Run the build separately and then install:
 
 ```powershell
-pnpm run build
+corepack pnpm run build
 npm link
 ```
 
@@ -102,4 +89,19 @@ openspec schemas
 openspec schema validate engine-spec-driven
 openspec templates
 openspec update
+openspec validate --all --strict --no-interactive
 ```
+
+## Official update would replace the team build
+
+This distribution intentionally suppresses the official npm self-update offer. Upgrade by pulling the approved team repository branch and rerunning `install-custom-openspec.mjs`. If `openspec` still offers an official update, check `where.exe openspec`; an older or official executable is probably earlier on PATH.
+
+## Spec migration refuses to run
+
+Run a dry run and resolve every reported invalid ID or collision before using `--write`:
+
+```powershell
+node .codex/skills/openspec-local-installer/scripts/migrate-team-spec-paths.mjs --target D:\path\to\target-repo
+```
+
+Archived changes are intentionally not migrated. The script updates only files below `openspec/`; inspect application code or external documentation separately if it refers to legacy IDs.

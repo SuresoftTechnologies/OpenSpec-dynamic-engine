@@ -1,33 +1,33 @@
 ## 1. 업스트림 기준선 통합
 
-- [ ] 1.1 `v1.11.0` tag를 팀 기능 브랜치에 merge하고 충돌 파일 목록을 확정한다.
-- [ ] 1.2 원본 v1.11 구현을 기준으로 충돌을 해소하고 package/version/build 설정을 정렬한다.
-- [ ] 1.3 v1.11에서 제거된 workspace/initiative 및 구형 generated prompt 잔여물을 정리한다.
+- [x] 1.1 `v1.11.0` tag를 팀 기능 브랜치에 merge하고 충돌 파일 목록을 확정한다.
+- [x] 1.2 원본 v1.11 구현을 기준으로 충돌을 해소하고 package/version/build 설정을 정렬한다.
+- [x] 1.3 v1.11에서 제거된 workspace/initiative 및 구형 generated prompt 잔여물을 정리한다.
 
 ## 2. 팀 커스텀 기능 포팅
 
-- [ ] 2.1 Jira key 해석, archive 이름과 change metadata를 v1.11 transactional archive에 통합한다.
-- [ ] 2.2 Jira archive의 일반 출력, JSON, Store/root, rollback 동작을 테스트한다.
-- [ ] 2.3 팀 schema 선택 시 적용되는 validation hook을 v1.11 spec discovery와 archive 내부 검증에 연결한다.
-- [ ] 2.4 한글 문서, TDD, 한글 주석과 task 완료 정책을 v1.11 config/schema extension point로 옮긴다.
+- [x] 2.1 Jira key 해석, archive 이름과 change metadata를 v1.11 transactional archive에 통합한다.
+- [x] 2.2 Jira archive의 일반 출력, JSON, Store/root, rollback 동작을 테스트한다.
+- [x] 2.3 팀 schema 선택 시 적용되는 validation hook을 v1.11 spec discovery와 archive 내부 검증에 연결한다.
+- [x] 2.4 한글 문서, TDD, 한글 주석과 task 완료 정책을 v1.11 config/schema extension point로 옮긴다.
 
 ## 3. Nested capability 규칙과 마이그레이션
 
-- [ ] 3.1 팀 capability validator를 정확한 `대기능/중기능/소기능` 3-depth와 segment별 kebab-case 규칙으로 변경한다.
-- [ ] 3.2 proposal/spec/apply/archive 지침이 전체 nested capability 경로를 보존하도록 팀 preset을 갱신한다.
-- [ ] 3.3 legacy underscore main spec과 활성 delta spec을 사전 검증 후 이동하는 dry-run 지원 마이그레이션 도구를 추가한다.
-- [ ] 3.4 Windows 경로, 잘못된 깊이, 대상 충돌, archived change 보존 회귀 테스트를 추가한다.
+- [x] 3.1 팀 capability validator를 정확한 `대분류/소분류/주제` 3-depth와 segment별 kebab-case 규칙으로 변경한다.
+- [x] 3.2 proposal/spec/apply/archive 지침이 전체 nested capability 경로를 보존하도록 팀 preset을 갱신한다.
+- [x] 3.3 legacy underscore main spec과 활성 delta spec을 사전 검증 후 이동하는 dry-run 지원 마이그레이션 도구를 추가한다.
+- [x] 3.4 Windows 경로, 잘못된 깊이, 대상 충돌, archived change 보존 회귀 테스트를 추가한다.
 
 ## 4. 설치와 자체 업데이트
 
-- [ ] 4.1 installer가 package manifest의 고정 pnpm을 사용하고 v1.11에서 제거된 postinstall 우회에 의존하지 않도록 변경한다.
-- [ ] 4.2 팀 build에서 공식 npm self-upgrade가 커스텀 CLI를 교체하지 않도록 배포판 보호 로직을 추가한다.
-- [ ] 4.3 installer가 config backup, 팀 preset 적용, Skill 갱신, schema/CLI 검증을 한 번에 수행하도록 갱신한다.
+- [x] 4.1 installer가 package manifest의 고정 pnpm을 사용하고 v1.11에서 제거된 postinstall 우회에 의존하지 않도록 변경한다.
+- [x] 4.2 팀 build에서 공식 npm self-upgrade가 커스텀 CLI를 교체하지 않도록 배포판 보호 로직을 추가한다.
+- [x] 4.3 installer가 config backup, 팀 preset 적용, Skill 갱신, schema/CLI 검증을 한 번에 수행하도록 갱신한다.
 - [ ] 4.4 link와 global-copy 설치의 반복 실행, PATH와 실제 실행 버전 검증 테스트를 보강한다.
 
 ## 5. 팀 OpenSpec 검증
 
-- [ ] 5.1 집중 단위 테스트와 Windows 경로 회귀 테스트를 실행한다.
+- [x] 5.1 집중 단위 테스트와 Windows 경로 회귀 테스트를 실행한다.
 - [ ] 5.2 전체 `pnpm test`, lint와 build를 실행하고 실패를 해소한다.
 - [ ] 5.3 change artifact strict validation과 구현 일치 검증을 완료한다.
 

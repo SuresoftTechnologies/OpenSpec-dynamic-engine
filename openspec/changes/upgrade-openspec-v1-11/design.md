@@ -10,7 +10,7 @@
 
 - v1.11.0을 기준선으로 삼고 최신 원본 동작과 테스트를 유지한다.
 - 팀 커스텀 기능을 v1.11의 extension point와 트랜잭션 경계에 맞게 포팅한다.
-- 팀 capability를 정확한 3-depth `대기능/중기능/소기능` 경로로 생성하고 검증한다.
+- 팀 capability를 정확한 3-depth `대분류/소분류/주제` 경로로 생성하고 검증한다.
 - 제품 저장소의 main spec과 활성 delta spec을 결정적으로 이동한다.
 - 한 명령으로 팀 CLI build/link, 팀 config 적용, Skill 갱신과 검증을 수행한다.
 - `engine`의 격리된 임시 브랜치에서 실제 사용자 업그레이드와 신규 nested spec 생성을 검증한다.
@@ -37,7 +37,7 @@
 팀 schema에서 신규 capability ID는 정확히 세 segment를 가진 POSIX 형식 문자열로 다룬다.
 
 ```text
-<대기능>/<중기능>/<소기능>
+<대분류>/<소분류>/<주제>
 ```
 
 각 segment는 lowercase kebab-case다. 파일 시스템 접근은 `path` API를 사용하고 사용자 출력과 ID 비교에서만 `/`로 정규화한다. main spec과 delta spec은 동일한 capability 상대 경로를 사용한다.

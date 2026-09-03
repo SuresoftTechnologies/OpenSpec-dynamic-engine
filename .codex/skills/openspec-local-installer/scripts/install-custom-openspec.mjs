@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -7,9 +7,10 @@ const args = parseArgs(process.argv.slice(2));
 const repo = resolve(args.repo ?? process.cwd());
 const mode = args.mode ?? 'link';
 const skipUninstall = Boolean(args['skip-uninstall']);
-const autoAllowEsbuild = args['auto-allow-esbuild'] !== 'false';
 const targetRepo = args.target ? resolve(args.target) : null;
 const skipTargetUpdate = Boolean(args['skip-target-update']);
+const skipTargetValidation = Boolean(args['skip-target-validation']);
+const migrateSpecs = Boolean(args['migrate-specs']);
 
 if (!['link', 'global-copy'].includes(mode)) {
   fail(`Invalid --mode "${mode}". Use "link" or "global-copy".`);
@@ -24,31 +25,20 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 if (packageJson.name !== '@fission-ai/openspec') {
   fail(`Expected @fission-ai/openspec, found ${packageJson.name ?? '(missing name)'}`);
 }
+if (packageJson.openspecDistribution !== 'suresoft-dynamic-engine') {
+  fail('This installer only installs the Suresoft team OpenSpec distribution.');
+}
+
+const pnpmVersion = getPinnedPnpmVersion(packageJson.packageManager);
 
 console.log(`OpenSpec repo: ${repo}`);
 console.log(`Install mode: ${mode}`);
+console.log(`Pinned pnpm: ${pnpmVersion}`);
 
 checkNodeVersion();
-ensurePnpm();
-
-let install = run('pnpm', ['install'], { cwd: repo, allowFailure: true });
-if (install.status !== 0 && /ERR_PNPM_IGNORED_BUILDS|Ignored build scripts/i.test(install.combined)) {
-  if (autoAllowEsbuild) {
-    console.log('pnpm blocked esbuild build scripts. Adding pnpm.onlyBuiltDependencies=["esbuild"] and retrying.');
-    allowEsbuildBuild(packageJsonPath);
-    install = run('pnpm', ['install'], { cwd: repo, allowFailure: true });
-  } else {
-    fail([
-      'pnpm blocked esbuild build scripts.',
-      'Run `pnpm approve-builds`, select esbuild, then rerun this installer.',
-    ].join('\n'));
-  }
-}
-if (install.status !== 0) {
-  fail(`pnpm install failed with exit code ${install.status}`);
-}
-
-run('pnpm', ['run', 'build'], { cwd: repo });
+ensureCorepackPnpm(pnpmVersion);
+run('corepack', ['pnpm', 'install', '--force'], { cwd: repo });
+run('corepack', ['pnpm', 'run', 'build'], { cwd: repo });
 
 if (!skipUninstall) {
   run('npm', ['uninstall', '-g', '@fission-ai/openspec'], { cwd: repo, allowFailure: true });
@@ -61,18 +51,30 @@ if (mode === 'link') {
   run('npm', ['install', '-g', '.'], { cwd: repo });
 }
 
-run('openspec', ['--version'], { cwd: repo });
+run('openspec', ['--version'], { cwd: repo, env: openspecEnv() });
 printResolvedExecutable();
 
 if (targetRepo) {
   applyTeamConfig(targetRepo);
+  if (migrateSpecs) {
+    migrateTeamSpecs(targetRepo);
+  }
   if (!skipTargetUpdate) {
-    run('openspec', ['update'], { cwd: targetRepo });
+    run('openspec', ['update'], { cwd: targetRepo, env: openspecEnv() });
+  }
+  if (!skipTargetValidation) {
+    run('openspec', ['schema', 'validate', 'engine-spec-driven'], {
+      cwd: targetRepo,
+      env: openspecEnv(),
+    });
+    run('openspec', ['validate', '--all', '--strict', '--no-interactive'], {
+      cwd: targetRepo,
+      env: openspecEnv(),
+    });
   }
 } else {
   console.log('No --target provided, so team config was not applied to a working repository.');
-  console.log('To apply it later, run:');
-  console.log(`node .codex/skills/openspec-local-installer/scripts/apply-team-config.mjs --source ${repo} --target <target-repo>`);
+  console.log('To install and configure a repository in one step, rerun with --target <target-repo>.');
 }
 
 console.log('Customized OpenSpec installation completed.');
@@ -94,6 +96,14 @@ function parseArgs(argv) {
   return parsed;
 }
 
+function getPinnedPnpmVersion(packageManager) {
+  const match = /^pnpm@([^+]+)(?:\+.*)?$/.exec(packageManager ?? '');
+  if (!match) {
+    fail('package.json must pin pnpm in the packageManager field.');
+  }
+  return match[1];
+}
+
 function checkNodeVersion() {
   const [major, minor] = process.versions.node.split('.').map(Number);
   if (major < 20 || (major === 20 && minor < 19)) {
@@ -102,31 +112,12 @@ function checkNodeVersion() {
   console.log(`Node: ${process.versions.node}`);
 }
 
-function ensurePnpm() {
-  const existing = run('pnpm', ['--version'], { allowFailure: true });
-  if (existing.status === 0) return;
-
-  console.log('pnpm not found. Trying Corepack activation.');
-  run('corepack', ['enable'], { allowFailure: true });
-  run('corepack', ['prepare', 'pnpm@latest', '--activate'], { allowFailure: true });
-
-  const afterCorepack = run('pnpm', ['--version'], { allowFailure: true });
-  if (afterCorepack.status === 0) return;
-
-  console.log('Corepack did not activate pnpm. Installing pnpm globally with npm.');
-  run('npm', ['install', '-g', 'pnpm']);
-  run('pnpm', ['--version']);
-}
-
-function allowEsbuildBuild(filePath) {
-  const current = JSON.parse(readFileSync(filePath, 'utf8'));
-  current.pnpm ??= {};
-  const existing = Array.isArray(current.pnpm.onlyBuiltDependencies)
-    ? current.pnpm.onlyBuiltDependencies
-    : [];
-  if (!existing.includes('esbuild')) {
-    current.pnpm.onlyBuiltDependencies = [...existing, 'esbuild'];
-    writeFileSync(filePath, `${JSON.stringify(current, null, 2)}\n`);
+function ensureCorepackPnpm(version) {
+  run('corepack', ['--version']);
+  run('corepack', ['prepare', `pnpm@${version}`, '--activate']);
+  const active = run('corepack', ['pnpm', '--version']);
+  if (active.stdout.trim() !== version) {
+    fail(`Expected pnpm ${version}, but Corepack resolved ${active.stdout.trim() || '(no version)'}.`);
   }
 }
 
@@ -136,11 +127,40 @@ function printResolvedExecutable() {
 }
 
 function applyTeamConfig(target) {
-  const scriptPath = join(repo, '.codex', 'skills', 'openspec-local-installer', 'scripts', 'apply-team-config.mjs');
+  const scriptPath = join(
+    repo,
+    '.codex',
+    'skills',
+    'openspec-local-installer',
+    'scripts',
+    'apply-team-config.mjs',
+  );
   if (!existsSync(scriptPath)) {
     fail(`Team config script not found: ${scriptPath}`);
   }
   run('node', [scriptPath, '--source', repo, '--target', target], { cwd: repo });
+}
+
+function migrateTeamSpecs(target) {
+  const scriptPath = join(
+    repo,
+    '.codex',
+    'skills',
+    'openspec-local-installer',
+    'scripts',
+    'migrate-team-spec-paths.mjs',
+  );
+  if (!existsSync(scriptPath)) {
+    fail(`Team spec migration script not found: ${scriptPath}`);
+  }
+  run('node', [scriptPath, '--target', target, '--write'], { cwd: repo });
+}
+
+function openspecEnv() {
+  return {
+    OPENSPEC_NO_UPDATE_CHECK: '1',
+    OPENSPEC_TELEMETRY: '0',
+  };
 }
 
 function run(command, commandArgs, options = {}) {
@@ -149,6 +169,7 @@ function run(command, commandArgs, options = {}) {
     cwd: options.cwd,
     encoding: 'utf8',
     shell: process.platform === 'win32',
+    env: { ...process.env, ...options.env },
   });
 
   const stdout = result.stdout ?? '';

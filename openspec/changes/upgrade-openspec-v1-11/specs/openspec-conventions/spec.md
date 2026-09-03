@@ -12,4 +12,4 @@ OpenSpec SHALL `/`로 구분된 세 segment로 구성되고 각 segment가 kebab
 #### Scenario: 잘못된 팀 capability 경로 거부
 - **WHEN** 사용자가 대문자, 공백, 빈 segment, underscore 구분자, 또는 정확히 세 개가 아닌 segment를 포함한 팀 capability를 작성하거나 검증한다
 - **THEN** 시스템은 해당 capability 경로를 거부한다
-- **AND** `대기능/중기능/소기능` 규칙과 `order-payment/refund-api/timeout-fix` 예시를 포함한 guidance를 표시한다
+- **AND** `대분류/소분류/주제` 규칙과 `order-payment/refund-api/timeout-fix` 예시를 포함한 guidance를 표시한다

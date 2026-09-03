@@ -6,7 +6,7 @@
 
 - 원본 OpenSpec v1.11.0을 팀 저장소에 통합한다.
 - Jira 키 기반 아카이브 이름과 메타데이터, 팀 schema 선택 시의 추가 검증, 한글 문서·TDD 지침을 최신 아키텍처에 맞게 포팅한다.
-- 팀 capability 경로를 `대기능/중기능/소기능`의 정확한 3-depth nested 경로로 변경하고 각 segment에 kebab-case를 적용한다.
+- 팀 capability 경로를 `대분류/소분류/주제`의 정확한 3-depth nested 경로로 변경하고 각 segment에 kebab-case를 적용한다.
 - 팀 CLI 설치와 프로젝트 설정 갱신을 한 흐름으로 제공하고, 공식 npm 업데이트가 팀 커스텀 CLI를 덮어쓰지 않도록 자체 업데이트 경계를 둔다.
 - `engine`과 `ct-maven`의 기존 main spec 및 활성 delta spec을 nested 경로로 이동하고 모든 참조를 갱신한다.
 - `engine` 임시 브랜치에서 실제 업그레이드 명령과 신규 nested spec 생성을 검증한다.
@@ -16,8 +16,8 @@
 
 ### New Capabilities
 
-- `team-installation`: 팀에서 승인한 OpenSpec CLI 설치, 프로젝트 설정 적용, 생성된 Skill 갱신과 버전 확인을 하나의 사용자 흐름으로 제공한다.
-- `team-spec-migration`: 기존 underscore capability를 3-depth nested 경로로 안전하게 마이그레이션하고 검증하는 동작을 정의한다.
+- `team/distribution/installation`: 팀에서 승인한 OpenSpec CLI 설치, 프로젝트 설정 적용, 생성된 Skill 갱신과 버전 확인을 하나의 사용자 흐름으로 제공한다.
+- `team/spec/migration`: 기존 underscore capability를 3-depth nested 경로로 안전하게 마이그레이션하고 검증하는 동작을 정의한다.
 
 ### Modified Capabilities
 

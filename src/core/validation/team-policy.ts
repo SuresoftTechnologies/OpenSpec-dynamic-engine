@@ -3,7 +3,7 @@
  *
  * 이 모듈은 원본 OpenSpec 검증 흐름을 바꾸지 않고, 팀 schema(`engine-spec-driven`)가
  * 적용된 change에서만 추가로 적용할 수 있는 순수 검증 함수를 제공한다.
- * - 팀 capability 이름 규칙(`대기능_중기능_소기능`).
+ * - 팀 capability 경로 규칙(`대분류/소분류/주제`).
  * - 한글 문서 작성 정책에 대한 명백한 영문 scaffold placeholder 경고.
  */
 import { ValidationIssue } from './types.js';
@@ -15,23 +15,31 @@ export const TEAM_SCHEMA_NAME = 'engine-spec-driven';
 const KEBAB_SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** guidance와 테스트에서 공유하는 팀 capability 이름 예시. */
-export const TEAM_CAPABILITY_EXAMPLE = 'order-payment_refund-api_timeout-fix';
+export const TEAM_CAPABILITY_EXAMPLE = 'order-payment/refund-api/timeout-fix';
 
 /**
- * 팀 capability 이름이 `_`로 구분된 세 개의 kebab-case segment인지 검증한다.
+ * 팀 capability ID가 `/`로 구분된 세 개의 kebab-case segment인지 검증한다.
  * 대문자, 공백, 빈 segment, 잘못된 segment 수는 모두 거부한다.
  */
-export function isValidTeamCapabilityName(name: string): boolean {
-  if (typeof name !== 'string' || name.length === 0) {
+export function isValidTeamCapabilityPath(capabilityPath: string): boolean {
+  if (typeof capabilityPath !== 'string' || capabilityPath.length === 0) {
     return false;
   }
-  const segments = name.split('_');
-  // 정확히 대기능_중기능_소기능 세 segment여야 한다.
+  // Capability IDs are portable identifiers, not platform-native paths.
+  // Reject backslashes even on Windows and use the canonical forward slash.
+  if (capabilityPath.includes('\\')) {
+    return false;
+  }
+  const segments = capabilityPath.split('/');
+  // 정확히 대분류/소분류/주제 세 segment여야 한다.
   if (segments.length !== 3) {
     return false;
   }
   return segments.every((segment) => KEBAB_SEGMENT.test(segment));
 }
+
+/** @deprecated Use isValidTeamCapabilityPath. */
+export const isValidTeamCapabilityName = isValidTeamCapabilityPath;
 
 /**
  * capability 이름이 팀 형식을 어기면 guidance가 포함된 ValidationIssue를, 아니면 null을 반환한다.
@@ -40,18 +48,18 @@ export function isValidTeamCapabilityName(name: string): boolean {
  * @param where - issue.path에 기록할 위치(예: spec directory 또는 proposal 항목)
  */
 export function teamCapabilityNameIssue(
-  name: string,
+  capabilityPath: string,
   where: string
 ): ValidationIssue | null {
-  if (isValidTeamCapabilityName(name)) {
+  if (isValidTeamCapabilityPath(capabilityPath)) {
     return null;
   }
   return {
     level: 'ERROR',
     path: where,
     message:
-      `Capability name "${name}" must use the team format ` +
-      `대기능_중기능_소기능: three '_'-separated kebab-case ` +
+      `Capability path "${capabilityPath}" must use the team format ` +
+      `대분류/소분류/주제: three '/'-separated kebab-case ` +
       `segments (e.g., ${TEAM_CAPABILITY_EXAMPLE}).`,
   };
 }

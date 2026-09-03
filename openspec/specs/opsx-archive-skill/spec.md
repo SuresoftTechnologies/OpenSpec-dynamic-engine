@@ -15,14 +15,15 @@ The system SHALL provide an `/opsx:archive` skill that archives completed change
 - **WHEN** agent executes `/opsx:archive` with a change name
 - **AND** all artifacts in the schema are complete
 - **AND** all tasks are complete
-- **THEN** the agent moves the change to `openspec/changes/archive/YYYY-MM-DD-<name>/`
+- **THEN** the agent moves the change to `openspec/changes/archive/<target-name>/`
 - **AND** displays success message with archived location
 
 #### Scenario: Change selection prompt
 
 - **WHEN** agent executes `/opsx:archive` without specifying a change
-- **THEN** the agent prompts user to select from available changes
-- **AND** shows only active changes (excludes archive/)
+- **THEN** the agent infers the change from conversation context, or auto-selects it when only one active change exists
+- **AND** when ambiguous, prompts user to select from available changes, showing only active changes (excludes archive/)
+- **AND** announces which change was selected and how to override
 
 ### Requirement: Artifact Completion Check
 
@@ -74,8 +75,12 @@ The skill SHALL prompt to sync delta specs before archiving if specs exist.
 - **WHEN** agent checks for delta specs
 - **AND** `specs/` directory exists in the change with spec files
 - **THEN** prompt user: "This change has delta specs. Would you like to sync them to main specs before archiving?"
-- **AND** if user confirms, execute `/opsx:sync` logic
-- **AND** proceed with archive regardless of sync choice
+- **AND** if user cancels, stop without archiving
+- **AND** if user confirms, execute `/opsx:sync` logic inline and wait for it to complete
+- **AND** verify every capability that has a delta spec, not only those the sync reports it touched: ADDED requirements present, MODIFIED requirements carrying the changes named in the delta, REMOVED requirements absent, RENAMED requirements present under the new name and absent under the old one
+- **AND** treat a capability whose last requirement the sync removed as verified when its main spec was deleted rather than left empty, and a spec the sync deliberately kept and reported as verified too
+- **AND** stop without archiving if the sync fails or any capability does not verify
+- **AND** archive only after verification passes, or when the user explicitly chose to archive without syncing or to archive already-synced specs
 
 #### Scenario: No delta specs
 
@@ -91,7 +96,7 @@ The skill SHALL move the change to the archive folder with date prefix.
 
 - **WHEN** archiving a change
 - **THEN** create `archive/` directory if it doesn't exist
-- **AND** generate target name as `YYYY-MM-DD-<change-name>` using current date
+- **AND** generate target name as `YYYY-MM-DD-<change-name>` using current date, keeping the name as-is when it already starts with a `YYYY-MM-DD-` prefix
 - **AND** move entire change directory to archive location
 - **AND** preserve `.openspec.yaml` file in archived change
 
@@ -128,18 +133,19 @@ The skill SHALL provide clear feedback about the archive operation.
 - **AND** suggest reviewing if archive was intentional
 
 ### Requirement: OPSX Archive Follows CLI Jira Policy
-`/opsx:archive` skill SHALL Jira archive naming과 보조 metadata 처리를 CLI archive command의 동작에 위임하도록 안내한다.
+Archive skill SHALL `operationGuidance`가 CLI-managed naming 또는 metadata를 요구할 때 최종 move를 CLI archive command에 위임하도록 안내한다.
 
 #### Scenario: CLI archive 동작 사용
 - **WHEN** 선택된 change를 archive한다
-- **AND** repository에 팀 Jira/archive 정책이 설정되어 있다
-- **THEN** skill은 `openspec archive`가 branch, prompt, optional fallback 순서로 Jira key를 resolve함을 안내한다
+- **AND** `operations.archive.guidance`가 CLI-managed Jira archive를 요구한다
+- **THEN** skill은 spec sync 결정을 먼저 완료하고 `openspec archive <name> --skip-specs --yes --require-jira`를 사용한다
+- **AND** `--skip-specs`로 이미 적용한 delta를 중복 적용하지 않는다
 - **AND** archive completion summary에 CLI가 출력한 Jira key와 archive path를 포함한다
 
-#### Scenario: Jira key optional fallback
-- **WHEN** 선택된 change에서 Jira key를 찾지 못했다
-- **AND** 팀 정책이 Jira key를 요구하지 않는다
-- **THEN** skill은 CLI archive가 기존 `archive/YYYY-MM-DD-<change-name>/` 형식으로 archive할 수 있음을 안내한다
+#### Scenario: 필수 Jira key 누락
+- **WHEN** CLI가 필수 Jira key 누락을 보고한다
+- **THEN** skill은 사용자에게 key를 요청하고 `--jira <key>`로 다시 실행한다
+- **AND** 다른 CLI 실패에는 metadata를 잃는 manual move로 fallback하지 않는다
 
 ### Requirement: OPSX Archive Auxiliary Metadata Summary
 `/opsx:archive` skill SHALL archive directory name을 primary trace key로 사용하고 `.openspec.yaml` Jira metadata를 보조 정보로 다룬다.
