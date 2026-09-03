@@ -62,4 +62,4 @@
 - [x] 10.2 `openspec-upstream-upgrader` Skill이 정확한 upstream ref와 안전한 작업 공간을 확인하고 모든 커스텀 ID의 보존 판정을 요구하도록 구현한다.
 - [x] 10.3 Codex, Claude, shared agents용 Skill 사본을 동기화하고 레지스트리 링크와 Skill parity를 자동 검증한다.
 - [x] 10.4 전체 build/test/lint와 change strict validation을 실행하고 기존 사용자 설치 updater와의 역할 분리를 확인한다.
-- [ ] 10.5 변경을 기존 WOR-1767 브랜치와 PR에 push하고 원격 head commit 갱신으로 확인한다.
+- [x] 10.5 변경을 기존 WOR-1767 브랜치와 PR에 push하고 원격 head commit 갱신으로 확인한다.
