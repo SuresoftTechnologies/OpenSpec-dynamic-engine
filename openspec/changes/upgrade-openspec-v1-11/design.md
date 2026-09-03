@@ -14,6 +14,7 @@
 - 제품 저장소의 main spec과 활성 delta spec을 결정적으로 이동한다.
 - 한 명령으로 팀 CLI build/link, 팀 config 적용, Skill 갱신과 검증을 수행한다.
 - `engine`의 격리된 임시 브랜치에서 실제 사용자 업그레이드와 신규 nested spec 생성을 검증한다.
+- 다음 업스트림 통합에서 팀 커스텀 기능을 기능별로 발견하고 검증할 수 있는 영구 인덱스와 AI 진입점을 제공한다.
 
 **Non-Goals:**
 
@@ -54,6 +55,16 @@ AI 진입점은 신규 설치용 `openspec-local-installer`와 기존 설치 갱
 
 updater가 source checkout을 최신화할 때는 clean tracking branch의 fast-forward만 허용한다. legacy spec 이동은 target 상태와 dry-run 변환표를 먼저 확인한 뒤 명시적 요청이나 승인이 있을 때만 실행한다. 이 경계로 source의 미커밋 변경과 제품 spec을 자동으로 숨기거나 덮어쓰지 않는다.
 
+### 팀 커스텀 레지스트리를 업스트림 통합의 진입점으로 사용
+
+`docs/team-customizations.md`는 팀 커스텀 기능의 상세 요구사항을 복제하는 문서가 아니라, 안정된 ID별로 사용자 계약, authoritative spec, 정책/config, 구현 지점, 회귀 테스트와 예상 충돌 지점을 연결하는 인덱스다. 상세 동작은 OpenSpec main spec을 기준으로 하고 레지스트리는 AI와 유지보수자가 관련 근거를 빠짐없이 찾도록 한다. 루트 `AGENTS.md`는 업스트림 분석이나 병합 전에 이 레지스트리와 전용 Skill을 읽도록 안내한다.
+
+### 사용자 설치 업데이트와 업스트림 소스 업그레이드를 분리
+
+`openspec-local-updater`는 이미 승인된 팀 source로 사용자 설치와 대상 프로젝트를 갱신한다. `openspec-upstream-upgrader`는 저장소 유지보수자가 새로운 공식 tag를 분석하고 통합하는 별도 흐름이다. 후자는 사용자가 지정한 정확한 upstream ref, clean checkout과 전용 branch를 요구하고, 레지스트리의 모든 ID를 `preserved`, `adapted`, `removed`, `not-applicable` 중 하나로 판정한다. `removed`는 사용자 승인 없이 허용하지 않는다.
+
+업스트림 기준선 표기는 merge와 전체 검증이 끝나기 전에는 갱신하지 않는다. 완료 change의 archive는 관련 PR이 병합된 뒤 수행해 delta spec이 main spec으로 승격되는 순서를 지킨다.
+
 ### Jira는 v1.11 archive 트랜잭션 안에서 처리
 
 Jira key 해석과 메타데이터 준비는 archive destination 확정 전에 수행한다. 실제 change와 metadata 이동은 v1.11의 staging/rollback 경계를 따른다. Store를 대상으로 하더라도 Jira branch는 사용자가 명령을 시작한 작업 저장소에서 조회한다. JSON 모드에서는 구조화된 Jira 필드를 출력하고 stdout에 사람용 로그를 섞지 않는다.
@@ -76,6 +87,8 @@ Jira key 해석과 메타데이터 준비는 archive destination 확정 전에 �
 4. 최신 팀 CLI를 build/link한 뒤 두 저장소에 팀 config와 Skill을 갱신한다.
 5. 격리된 `engine` 임시 브랜치에서 upgrade 명령을 실행하고 신규 change/spec이 3-depth로 생성되는지 확인한다.
 6. 각 저장소의 strict validation과 Git diff를 확인한 뒤 기능 브랜치를 push하고 기본 브랜치 대상 PR을 생성한다.
+7. 팀 커스텀 레지스트리와 업스트림 업그레이드 Skill을 기준선에 포함한다.
+8. PR 병합을 확인한 뒤 완료 change를 archive하여 신규 team capability를 main spec으로 승격한다.
 
 롤백은 제품 저장소에서는 기능 브랜치 폐기, 팀 CLI에서는 이전 팀 tag 재설치로 수행한다. installer가 만든 config backup은 검증 실패 시 복구에 사용한다.
 

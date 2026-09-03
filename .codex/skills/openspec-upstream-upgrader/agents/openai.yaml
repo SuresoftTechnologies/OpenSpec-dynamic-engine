@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenSpec Upstream Upgrader"
+  short_description: "Safely integrate official OpenSpec releases."
+  default_prompt: "Use $openspec-upstream-upgrader to integrate an official OpenSpec release while preserving every registered team customization."

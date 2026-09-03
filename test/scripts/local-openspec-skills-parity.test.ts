@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 
 const repositoryRoot = join(import.meta.dirname, "..", "..");
 const skillRoots = [".codex", ".claude", ".agents"];
-const skillNames = ["openspec-local-installer", "openspec-local-updater"];
+const skillNames = [
+  "openspec-local-installer",
+  "openspec-local-updater",
+  "openspec-upstream-upgrader",
+];
 
 function listFiles(root: string, directory = root): string[] {
   return readdirSync(directory, { withFileTypes: true })

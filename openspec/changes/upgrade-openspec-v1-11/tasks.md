@@ -55,3 +55,11 @@
 - [x] 9.2 `openspec-local-updater`가 기존 설치 방식과 source를 탐색하고 필요한 입력만 질문하도록 구현하며 진단 테스트 통과로 확인한다.
 - [x] 9.3 Codex, Claude, shared agents용 Skill 사본을 동기화하고 신규 설치와 기존 업데이트 실제 흐름이 모두 strict validation을 통과하는지 확인한다.
 - [x] 9.4 변경을 기존 WOR-1767 브랜치와 PR에 push하고 원격 head commit 갱신으로 확인한다.
+
+## 10. 팀 커스텀 인벤토리와 다음 업스트림 업그레이드
+
+- [x] 10.1 `docs/team-customizations.md`에 기준선과 팀 커스텀 기능별 spec, 정책/config, 구현, 테스트와 충돌 지점을 연결하고 루트 `AGENTS.md`에서 필수 진입점으로 안내한다.
+- [x] 10.2 `openspec-upstream-upgrader` Skill이 정확한 upstream ref와 안전한 작업 공간을 확인하고 모든 커스텀 ID의 보존 판정을 요구하도록 구현한다.
+- [x] 10.3 Codex, Claude, shared agents용 Skill 사본을 동기화하고 레지스트리 링크와 Skill parity를 자동 검증한다.
+- [x] 10.4 전체 build/test/lint와 change strict validation을 실행하고 기존 사용자 설치 updater와의 역할 분리를 확인한다.
+- [ ] 10.5 변경을 기존 WOR-1767 브랜치와 PR에 push하고 원격 head commit 갱신으로 확인한다.
